@@ -1,11 +1,11 @@
 from collections import deque
 
 class RollingHash:
-    def __init__(self, k, initial_k_characters):
+    def __init__(self, k, b, initial_k_characters):
         if k != len(initial_k_characters):
             raise IndexError
         self.k = k
-        self.b = 26
+        self.b = b
         self.characters = initial_k_characters 
         self.hash = 0
         for i in range(len(initial_k_characters)):
@@ -20,10 +20,10 @@ class RollingHash:
         self.characters.append(c)
         return self.hash
 
-def get_k_grams(k, text):
+def get_k_grams(k, b, text):
     if len(text) < k:
         return []
-    rolling_hash = RollingHash(k, list(text[:k]))
+    rolling_hash = RollingHash(k, b, list(text[:k]))
     k_grams = [rolling_hash.hash] + list(map(lambda c: rolling_hash.push(c), text[k:]))
     return k_grams
 
@@ -50,7 +50,10 @@ def maxSlidingWindowIndex(nums, k):
 def winnow(text):
     k = 4
     window_k = 4
-    k_grams = get_k_grams(k, text)
+    b = 2
+    k_grams = get_k_grams(k, b, text)
     selected_k_grams_index = list(set(maxSlidingWindowIndex(k_grams, window_k)))
     selected_k_grams_index_pair = list(map(lambda i: (k_grams[i], i), selected_k_grams_index))
     return selected_k_grams_index_pair
+
+print(winnow("YOYOYOYOYOYOYOYOYOYOYO"))
