@@ -53,7 +53,25 @@ def winnow(text):
     b = 2
     k_grams = get_k_grams(k, b, text)
     selected_k_grams_index = list(set(maxSlidingWindowIndex(k_grams, window_k)))
-    selected_k_grams_index_pair = list(map(lambda i: (k_grams[i], i), selected_k_grams_index))
-    return selected_k_grams_index_pair
+    selected_k_grams = list(map(lambda i: k_grams[i], selected_k_grams_index))
+    return selected_k_grams
 
-print(winnow("YOYOYOYOYOYOYOYOYOYOYO"))
+def compare(texts):
+    k_grams_by_text_index = list(map(lambda k_grams: set(k_grams), map(winnow, texts)))
+    k_gram_match_count_by_text_index = [0] * len(texts)
+    # count k_gram matches between texts
+    for i in range(len(k_grams_by_text_index)):
+        for j in range(i + 1, len(k_grams_by_text_index)):
+            kgrams_i = k_grams_by_text_index[i]
+            kgrams_j = k_grams_by_text_index[j]
+            matches = len(kgrams_i & kgrams_j)
+            k_gram_match_count_by_text_index[i] += matches
+            k_gram_match_count_by_text_index[j] += matches
+    return k_gram_match_count_by_text_index
+
+print(compare([
+    "The Quick Grey Fox Jumps Over The Lazy Dog",
+    "The Quick Brown Fox Jumps Over The Lazy Cat",
+    "Hello From the Other Side",
+    "The Lazy Cat Meows From The Other Side"
+]))
