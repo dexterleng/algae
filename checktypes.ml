@@ -22,8 +22,7 @@ module type PREPROCESSING =  sig
     ->string -> string list -> char list -> bool -> string
   val k_grams : string -> int -> string list
   val hash_file : string -> int list
-  val get_file_positions : Unix.dir_handle ->
-    string-> string -> int list -> (string * string) list
+  val get_file_positions : string -> int list -> (int * string) list
 end
 
 module type COMPARISON = sig

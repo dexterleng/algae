@@ -172,10 +172,20 @@ and handle_compare st a b results =
       | (Some r1, Some r2) -> begin
           let l1 = List.map (snd) r1 |> List.rev in
           let l2 = List.map (snd) r2 |> List.rev in
-          let res1 = Preprocessing.get_file_positions
-              (Unix.opendir st.directory) st.directory a l2 in
-          let res2 = Preprocessing.get_file_positions
-              (Unix.opendir st.directory) st.directory b l1 in
+          let res1 =
+            let res = Preprocessing.get_file_positions (st.directory ^ Filename.dir_sep ^ a) l2 in
+            res |> List.map (fun x ->
+              let (p, s) = x in
+              (string_of_int p, s)
+            )
+          in
+          let res2 =
+            let res = Preprocessing.get_file_positions (st.directory ^ Filename.dir_sep ^ b) l1 in
+            res |> List.map (fun x ->
+              let (p, s) = x in
+              (string_of_int p, s)
+            )
+          in
           print_endline "generating display...";
           let padded1 = pad res1 (List.length res2) in
           let padded2 = pad res2 (List.length res1) in
