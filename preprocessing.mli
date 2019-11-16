@@ -89,4 +89,4 @@ val hash_file : string -> int list
  * positions once the files have been preprocessed.
  *)
 val get_file_positions : Unix.dir_handle ->
-  string -> string -> int list -> (string * string) list
+  string -> string -> int list -> (int * string) list
