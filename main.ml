@@ -174,15 +174,13 @@ and handle_compare st a b results =
           let l2 = List.map (snd) r2 |> List.rev in
           let res1 =
             let res = Preprocessing.get_file_positions (st.directory ^ Filename.dir_sep ^ a) l2 in
-            res |> List.map (fun x ->
-              let (p, s) = x in
+            res |> List.map (fun (p, s) ->
               (string_of_int p, s)
             )
           in
           let res2 =
             let res = Preprocessing.get_file_positions (st.directory ^ Filename.dir_sep ^ b) l1 in
-            res |> List.map (fun x ->
-              let (p, s) = x in
+            res |> List.map (fun (p, s) ->
               (string_of_int p, s)
             )
           in
