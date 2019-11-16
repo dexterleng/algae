@@ -252,27 +252,7 @@ let determine_language_file f =
   else if check_suffix f "py" then "python_info.json"
   else failwith "This file format is not supported"
 
-(* Refer to preprocessing.mli for this function's speficiations *)
-let hash_file f =
-  let rec hash_helper f_channel s =
-    try
-      let line = input_line f_channel in
-      hash_helper f_channel (s^line^"\n")
-    with
-    | End_of_file -> s in
-    let language_file = determine_language_file f in
-    let keywords = keywords_list language_file in
-    let spec_chars = special_chars language_file in
-    let f_string = hash_helper (open_in f) language_file in
-    let is_txt = check_suffix f "txt" in
-    let com_info = comment_info language_file in
-    let noise_removed_str =
-    remove_noise com_info f_string keywords spec_chars is_txt in
-    let n_grams = k_grams noise_removed_str 35 in
-    List.map (Hashtbl.hash) n_grams
-
-(* Refer to preprocessing.mli for this function's speficiations *)
-let rec get_file_positions dir dir_name filename positions =
+let read_file f =
   let rec hash_helper f_channel s =
       try
         let line = input_line f_channel in
@@ -280,29 +260,39 @@ let rec get_file_positions dir dir_name filename positions =
       with
       | End_of_file -> s
   in
-  try
-    let f_name = Unix.readdir dir in
-    if f_name <> filename then get_file_positions dir dir_name filename
-        positions
-    else begin
-      let f = dir_name ^ Filename.dir_sep ^ f_name in
-      let language_file = determine_language_file f in
-      let keywords = keywords_list language_file in
-      let spec_chars = special_chars language_file in
-      let channel = open_in f in
-      let f_string = hash_helper channel language_file in
-      let is_txt = check_suffix f "txt" in
-      let com_info = comment_info language_file in
-      let noise_removed_str =
-        remove_noise com_info f_string keywords spec_chars is_txt in
-      let n_grams = k_grams noise_removed_str 35 in
-      let file = n_grams in
-      let results = List.map (fun x ->
-        (string_of_int x, List.nth file (x - 1))
-      ) positions in
-      List.sort (fun a b ->
-        Pervasives.compare (snd a |> Hashtbl.hash) (snd b |> Hashtbl.hash)
-      ) results
-    end
-  with
-  | _ -> []
+  hash_helper (open_in f) ""
+
+type processed_file =
+  {
+    f: string;
+    language_file: string;
+    f_content: string;
+    noise_removed_content: string;
+  }
+
+let process_file f =
+  let language_file = determine_language_file f in
+  let keywords = keywords_list language_file in
+  let spec_chars = special_chars language_file in
+  let f_content = read_file f in
+  let is_txt = check_suffix f "txt" in
+  let com_info = comment_info language_file in
+  let noise_removed_content =
+    remove_noise com_info f_content keywords spec_chars is_txt in
+  { f; language_file; f_content; noise_removed_content; }
+  
+
+(* Refer to preprocessing.mli for this function's speficiations *)
+let hash_file f =
+  let processed_file = process_file f in
+  let n_grams = k_grams processed_file.noise_removed_content 35 in
+  List.map (Hashtbl.hash) n_grams
+
+(* Refer to preprocessing.mli for this function's speficiations *)
+let get_file_positions f positions =
+  let processed_file = process_file f in
+  let n_grams = k_grams processed_file.noise_removed_content 35 in
+  List.map (fun p ->
+    (p, List.nth n_grams (p - 1))
+  ) positions
+

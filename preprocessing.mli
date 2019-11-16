@@ -88,5 +88,4 @@ val hash_file : string -> int list
  * and returns a list of parts of the files that start at the values in
  * positions once the files have been preprocessed.
  *)
-val get_file_positions : Unix.dir_handle ->
-  string -> string -> int list -> (string * string) list
+val get_file_positions : string -> int list -> (int * string) list
