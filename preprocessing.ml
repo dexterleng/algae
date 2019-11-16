@@ -296,13 +296,10 @@ let rec get_file_positions dir dir_name filename positions =
       let noise_removed_str =
         remove_noise com_info f_string keywords spec_chars is_txt in
       let n_grams = k_grams noise_removed_str 35 in
-      let file = n_grams in
-      let results = List.map (fun x ->
-        (string_of_int x, List.nth file (x - 1))
-      ) positions in
-      List.sort (fun a b ->
-        Pervasives.compare (snd a |> Hashtbl.hash) (snd b |> Hashtbl.hash)
-      ) results
+      List.map (fun p ->
+        (p, List.nth n_grams (p - 1))
+      ) positions
     end
   with
   | _ -> []
+
