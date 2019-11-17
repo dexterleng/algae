@@ -1,12 +1,15 @@
+let negate f a = not (f a)
+
 let rec list_files dir =
+  let is_hidden d =
+    try d.[0] == '.'
+    with invalid_arg -> true
+  in
   match Sys.is_directory dir with
     | true ->
       let children = Sys.readdir dir |> Array.to_list in
       children
-        |> List.filter (fun c ->
-          try c.[0] != '.'
-          with invalid_arg -> false
-        )
+        |> List.filter (negate is_hidden)          
         |> List.map (Filename.concat dir)
         |> List.map list_files
         |> List.flatten
