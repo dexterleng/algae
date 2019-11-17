@@ -3,10 +3,15 @@ let rec list_files dir =
     | true ->
       let children = Sys.readdir dir |> Array.to_list in
       children
+        |> List.filter (fun c ->
+          try c.[0] != '.'
+          with invalid_arg -> false
+        )
         |> List.map (Filename.concat dir)
         |> List.map list_files
         |> List.flatten
-    | false -> [dir]
+    | false ->
+      [dir]
 
 let build_project_file_dict project_dir =
   let project_files = list_files project_dir in
