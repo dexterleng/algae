@@ -89,3 +89,5 @@ val hash_file : string -> int list
  * positions once the files have been preprocessed.
  *)
 val get_file_positions : string -> int list -> (int * string) list
+
+val determine_language_file: string -> string
