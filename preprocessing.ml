@@ -244,12 +244,12 @@ let k_grams s k =
  * that the code in the file named [f] is written in.
  *)
 let determine_language_file f =
-  if check_suffix f "txt" then "txt_info.json"
-  else if check_suffix f "ml" then "ocaml_info.json"
-  else if check_suffix f "mli" then "ocaml_info.json"
-  else if check_suffix f "c" then "c_info.json"
-  else if check_suffix f "java" then "java_info.json"
-  else if check_suffix f "py" then "python_info.json"
+  if check_suffix f ".txt" then "txt_info.json"
+  else if check_suffix f ".ml" then "ocaml_info.json"
+  else if check_suffix f ".mli" then "ocaml_info.json"
+  else if check_suffix f ".c" then "c_info.json"
+  else if check_suffix f ".java" then "java_info.json"
+  else if check_suffix f ".py" then "python_info.json"
   else failwith "This file format is not supported"
 
 let read_file f =
