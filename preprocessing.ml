@@ -22,23 +22,14 @@ let read_file f =
   in
   hash_helper (open_in f) ""
 
-type project_file =
-  {
-    file_name: string;
-    file_content: string;
-  }
-
-let process_file file_name =
-  { file_name; file_content = read_file file_name; }
-  
 (* Refer to preprocessing.mli for this function's speficiations *)
-let hash_file processed_file =
-  let n_grams = k_grams processed_file.file_content 35 in
+let hash_file file_content k =
+  let n_grams = k_grams file_content k in
   List.map (Hashtbl.hash) n_grams
 
 (* Refer to preprocessing.mli for this function's speficiations *)
-let get_file_positions processed_file positions =
-  let n_grams = k_grams processed_file.file_content 35 in
+let get_file_positions file_content positions k =
+  let n_grams = k_grams file_content k in
   List.map (fun p ->
     (p, List.nth n_grams (p - 1))
   ) positions
