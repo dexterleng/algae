@@ -54,12 +54,26 @@ let rec generate_pairs_between_two_lists list_a list_b =
       (List.map (fun b -> (head_a, b)) list_b)
       (generate_pairs_between_two_lists rest_a list_b)
 
+(* (v1, p1) list, (v2, p2) list -> (p1, p2) list where v1 = v2 *)
+let matching_positions v1 v2 =
+  let rec intersection_helper lst1 lst2 common =
+    match lst1 with
+    | [] -> common
+    | (hash_a, position_a)::t -> 
+      let position_b_option = try Some(List.assoc hash_a lst2) with Not_found -> None in
+      let new_common = match position_b_option with
+        | Some(position_b) -> (position_a, position_b)::common 
+        | None -> common
+      in
+      intersection_helper t lst2 new_common 
+  in
+  List.rev(intersection_helper v1 v2 [])
+
 let compare_projects (project_a, project_b) =
   let file_pairs = generate_pairs_between_two_lists project_a project_b in
   let file_pair_to_hash_matches = file_pairs
     |> List.map (fun ((processed_file_a, positions_a), (processed_file_b, positions_b)) ->
-      (* Comparison.intersection returns (v,p) of first param! *)
-      ((processed_file_a, processed_file_b), (Comparison.intersection positions_a positions_b))) in
+      ((processed_file_a, processed_file_b), (matching_positions positions_a positions_b))) in
   file_pair_to_hash_matches
 
 let rec list_zip list_a list_b =
@@ -79,9 +93,12 @@ let () =
   |> List.iter (fun ((file_a, file_b), matched_positions) ->
     print_endline "";
     Printf.printf "COMPARING %s with %s \n" file_a.file_name file_b.file_name;
-    Preprocessing.get_file_positions file_a (List.map snd matched_positions)
-      |> List.iter (fun (p, v) ->
-        print_endline v;
+    let a_matches = Preprocessing.get_file_positions file_a (List.map fst matched_positions) in
+    let b_matches = Preprocessing.get_file_positions file_b (List.map snd matched_positions) in
+    list_zip a_matches b_matches
+      |> List.iter (fun ((_, v1), (_, v2)) ->
+        print_endline v1;
+        print_endline v2;
         print_endline "";
       );
     print_endline "";
