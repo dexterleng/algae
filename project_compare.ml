@@ -18,26 +18,15 @@ let rec list_files_recursively dir =
     | false ->
       [dir]
 
-let is_supported_file dir =
-  let language_file =
-    try Some(Preprocessing.determine_language_file dir)
-    with _ -> None
-  in
-  match language_file with
-    | Some(_) -> true
-    | None -> false
-
 let list_folders dir =
   Sys.readdir dir
     |> Array.to_list
     |> List.map (Filename.concat dir)
     |> List.filter Sys.is_directory 
 
-
-
 let build_project project_dir =
   let project_files = list_files_recursively project_dir
-    |> List.filter is_supported_file
+    |> List.filter (fun filename -> Filename.check_suffix filename ".java")
   in
   let f file_dirs =
     let process_file file_dir =
@@ -86,11 +75,10 @@ let () =
   let project_comparison_results = project_pairs 
     |> List.map compare_projects
     |> List.flatten in
-
   project_comparison_results
   |> List.iter (fun ((file_a, file_b), matched_positions) ->
     print_endline "";
-    Printf.printf "COMPARING %s with %s \n" file_a.f file_b.f;
+    Printf.printf "COMPARING %s with %s \n" file_a.file_name file_b.file_name;
     Preprocessing.get_file_positions file_a (List.map snd matched_positions)
       |> List.iter (fun (p, v) ->
         print_endline v;
