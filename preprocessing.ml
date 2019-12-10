@@ -283,14 +283,12 @@ let process_file f =
   
 
 (* Refer to preprocessing.mli for this function's speficiations *)
-let hash_file f =
-  let processed_file = process_file f in
+let hash_file processed_file =
   let n_grams = k_grams processed_file.noise_removed_content 35 in
   List.map (Hashtbl.hash) n_grams
 
 (* Refer to preprocessing.mli for this function's speficiations *)
-let get_file_positions f positions =
-  let processed_file = process_file f in
+let get_file_positions processed_file positions =
   let n_grams = k_grams processed_file.noise_removed_content 35 in
   List.map (fun p ->
     (p, List.nth n_grams (p - 1))

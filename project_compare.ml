@@ -1,3 +1,5 @@
+open Preprocessing
+
 let negate f a = not (f a)
 
 let rec list_files_recursively dir =
@@ -31,24 +33,22 @@ let list_folders dir =
     |> List.map (Filename.concat dir)
     |> List.filter Sys.is_directory 
 
-let build_project_file_dict project_dir =
+
+
+let build_project project_dir =
   let project_files = list_files_recursively project_dir
     |> List.filter is_supported_file
   in
-
-  project_files |> List.iter (fun f ->
-    print_endline f
-  );
-
-  let rec build_file_dict dirs file_dict =
-    match dirs with
-      | [] -> file_dict
-      | dir::rest ->
-        let new_dict = Comparison.FileDict.insert dir
-          (Winnowing.winnow (Preprocessing.hash_file dir) 40) file_dict in
-        build_file_dict rest new_dict
+  let f file_dirs =
+    let process_file file_dir =
+        let processed_file = Preprocessing.process_file file_dir in
+        let positions = Winnowing.winnow (Preprocessing.hash_file processed_file) 40 in
+        (processed_file, positions)
+    in
+    List.map process_file file_dirs
   in
-  build_file_dict project_files Comparison.FileDict.empty
+  f project_files
+  
 
 let rec generate_pairs list =
   match list with
@@ -65,17 +65,13 @@ let rec generate_pairs_between_two_lists list_a list_b =
       (List.map (fun b -> (head_a, b)) list_b)
       (generate_pairs_between_two_lists rest_a list_b)
 
-let compare_projects project_a_file_dict project_b_file_dict =
-  let project_a = Comparison.FileDict.to_list project_a_file_dict in
-  let project_b = Comparison.FileDict.to_list project_b_file_dict in
+let compare_projects (project_a, project_b) =
   let file_pairs = generate_pairs_between_two_lists project_a project_b in
   let file_pair_to_hash_matches = file_pairs
-    |> List.map (fun ((file_a, hashes_a), (file_b, hashes_b)) ->
+    |> List.map (fun ((processed_file_a, positions_a), (processed_file_b, positions_b)) ->
       (* Comparison.intersection returns (v,p) of first param! *)
-      ((file_a, file_b), (Comparison.intersection hashes_a hashes_b))) in
+      ((processed_file_a, processed_file_b), (Comparison.intersection positions_a positions_b))) in
   file_pair_to_hash_matches
-    |> List.to_seq
-    |> Hashtbl.of_seq
 
 let rec list_zip list_a list_b =
   match list_a, list_b with
@@ -83,44 +79,23 @@ let rec list_zip list_a list_b =
     | _, _ -> []
 
 let () =
-  let projects_parent_dir = "./tests/OldPractTest/DBIT_1A21_AY0809S2_JPRG_PRACTICAL_TEST/" in
+  let projects_parent_dir = "./tests/OldPractTest/" in
   let project_dirs = list_folders projects_parent_dir in
+  let projects = project_dirs |> List.map build_project  in
+  let project_pairs = generate_pairs projects in
+  let project_comparison_results = project_pairs 
+    |> List.map compare_projects
+    |> List.flatten in
 
-  let project_file_dicts =
-    project_dirs
-      |> List.map (fun dir ->
-        (dir, build_project_file_dict dir)
-      )
-  in
-  let project_file_dict_pairs = generate_pairs project_file_dicts in
-
-  let all_compare_results =
-    project_file_dict_pairs
-      |> List.map (fun ((a_dir, a_file_dict), (b_dir, b_file_dict)) ->
-        let single_compare_result = compare_projects a_file_dict b_file_dict |> Hashtbl.to_seq |> List.of_seq in
-
-        let string_matches = single_compare_result
-          |> List.map (fun ((file_a, file_b), hashes) ->
-            let positions = List.map snd hashes in
-            
-            positions |> List.iter (Printf.printf "%d ");
-
-            let a_string_matches = Preprocessing.get_file_positions file_a positions |> List.map snd in
-            ((a_dir, file_a), (b_dir, file_b), a_string_matches)
-          )
-        in
-        string_matches
-      )
-      |> List.flatten
-  in
-
-  all_compare_results
-    |> List.iter (fun (((a_dir, file_a), (b_dir, file_b), matches)) ->
-      Printf.printf "COMPARING %s (%s) with %s (%s)\n" file_a a_dir file_b b_dir;
-      print_endline "";
-      matches |> List.iter (fun str ->
-        print_endline str;
+  project_comparison_results
+  |> List.iter (fun ((file_a, file_b), matched_positions) ->
+    print_endline "";
+    Printf.printf "COMPARING %s with %s \n" file_a.f file_b.f;
+    Preprocessing.get_file_positions file_a (List.map snd matched_positions)
+      |> List.iter (fun (p, v) ->
+        print_endline v;
         print_endline "";
       );
-      print_endline "";
-    );
+    print_endline "";
+  );
+

@@ -1,6 +1,14 @@
 open Winnowing
 open Unix
 
+type processed_file =
+  {
+    f: string;
+    language_file: string;
+    f_content: string;
+    noise_removed_content: string;
+  }
+
 (* [keywords_list language_file] is a list of keywords pertaining to a
  * particular language, which are stored in a json file with the name
  * [language_file].
@@ -81,13 +89,15 @@ val k_grams : string -> int -> string list
  * removing comments, replacing all variable names and strings with a generic
  * tag, while making sure that keywords and module names remain intact.
  *)
-val hash_file : string -> int list
+val hash_file : processed_file -> int list
 
 (* [get_file_positions dir dir_name filename positions] rehashes file filename
  * from directory dir, preprocessing it similar to how it would be in hash_file,
  * and returns a list of parts of the files that start at the values in
  * positions once the files have been preprocessed.
  *)
-val get_file_positions : string -> int list -> (int * string) list
+val get_file_positions : processed_file -> int list -> (int * string) list
 
 val determine_language_file: string -> string
+
+val process_file: string -> processed_file
