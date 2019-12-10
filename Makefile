@@ -8,4 +8,4 @@ clean:
 	ocamlbuild -clean
 
 run:
-	ocamlbuild -use-ocamlfind main.byte && ./main.byte
+	ocamlbuild -use-ocamlfind project_compare.byte && ./project_compare.byte
