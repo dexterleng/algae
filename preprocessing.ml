@@ -258,7 +258,9 @@ let read_file f =
         let line = input_line f_channel in
         hash_helper f_channel (s^line^"\n")
       with
-      | End_of_file -> s
+      | End_of_file ->
+        close_in f_channel;
+        s
   in
   hash_helper (open_in f) ""
 
