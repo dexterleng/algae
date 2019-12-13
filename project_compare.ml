@@ -44,7 +44,10 @@ type project = {
 type file_compare_result = {
   project_a_file: project_file;
   project_b_file: project_file;
-  matching_kgrams: (kgram * kgram) list
+  matching_kgrams: (kgram * kgram) list;
+  (* match density is no. of matching kgrams / total no. of kgrams of the file. *)
+  project_a_file_match_density: float;
+  project_b_file_match_density: float;
 }
 
 type project_compare_result = {
@@ -93,7 +96,9 @@ let compare_files project_a_file project_b_file =
     | [] -> pairs
   in
   let matching_kgrams = pair_kgrams_with_matching_hashes project_a_file.selected_kgrams project_b_file.selected_kgrams [] in
-  { project_a_file; project_b_file; matching_kgrams; }
+  let project_a_file_match_density = float_of_int (List.length matching_kgrams) /. float_of_int (List.length project_a_file.selected_kgrams) in
+  let project_b_file_match_density = float_of_int (List.length matching_kgrams) /. float_of_int (List.length project_b_file.selected_kgrams) in
+  { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density; project_b_file_match_density; }
 
 let compare_projects project_a project_b =
   let file_pairs = generate_pairs_between_two_lists project_a.files project_b.files in
@@ -111,7 +116,7 @@ let () =
 
   project_compare_results |> List.iter (fun { project_a; project_b; file_compare_results; } ->
     Printf.printf "COMPARING PROJECT %s with PROJECT %s" project_a.project_name project_b.project_name;
-    file_compare_results |> List.iter (fun { project_a_file; project_b_file; matching_kgrams; } ->
+    file_compare_results |> List.iter (fun { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density } ->
       Printf.printf "COMPARING FILE %s with FILE %s" project_a_file.file_name project_b_file.file_name;
       let kgrams_a = Preprocessing.get_file_positions project_a_file.file_content (matching_kgrams |> List.map fst |> List.map (fun kg -> kg.start_index)) k in
       let kgrams_b = Preprocessing.get_file_positions project_b_file.file_content (matching_kgrams |> List.map snd |> List.map (fun kg -> kg.start_index)) k in
@@ -119,6 +124,7 @@ let () =
       zip_kgrams |> List.iter (fun ((_, v1), (_, v2)) ->
         print_endline v1;
         print_endline v2;
+        print_float project_a_file_match_density; 
         print_endline ""
       );
       print_endline ""
