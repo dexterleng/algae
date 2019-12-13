@@ -66,4 +66,4 @@ module Window : BoundedQueueWithCounter
  * p is the (index of v in the input + 1) the (v,p) list is not guaranteed to
  * be in any particular order requires: [w] is a positive integer
  *)
-val winnow: int list -> int -> (int * int) list
+val winnow: int -> int list -> (int * int) list
