@@ -2,3 +2,5 @@
 tests/.DS_Store
 _build/
 *.byte
+*.vim
+*.swp
