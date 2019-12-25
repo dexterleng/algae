@@ -1,36 +1,55 @@
+open Core
 
-(* Refer to preprocessing.mli for this function's speficiations *)
-let k_grams s k =
-  let rec k_grams_helper acc s n =
-    try
-      let n_sub_str = String.sub s 0 n in
-      let tail_str = String.sub s 1 ((String.length s)-1) in
-      k_grams_helper (n_sub_str::acc) tail_str n
-    with Invalid_argument _ -> List.rev acc
+let rec generate_n_grams n l =
+  if n <= List.length l
+    then (List.take l n)::(generate_n_grams n (List.drop l 1))
+  else
+    []
+
+type kgram = {
+  length: int;
+  (* line number is zero indexed *)
+  occupying_lines: Core.Int.Set.t;
+  (* this is just min of occupying_lines *)
+  starting_line: int;
+  starting_index_in_line: int;
+  hash: int;
+} [@@deriving sexp]
+
+let rec list_zip list_a list_b =
+  match list_a, list_b with
+    | head_a::rest_a, head_b::rest_b -> (head_a, head_b)::(list_zip rest_a rest_b)
+    | _, _ -> []
+
+let k_grams_with_line_number lines k =
+  let chars_with_position = List.concat_mapi ~f:(fun line_index line ->
+    let chars = List.mapi ~f:(fun char_index char -> (char, line_index, char_index)) (String.to_list line) in
+    chars
+  ) lines
   in
-  k_grams_helper [] s k
+  let k_grams = generate_n_grams k chars_with_position in
+  k_grams
+    |> List.map ~f:(fun chars ->
+      let length = k in
+      let (_, starting_line, starting_index_in_line) = (List.nth_exn chars 0) in
+      let kgram_string = String.of_char_list (List.map ~f:(fun (c,_,_) -> c) chars) in
+      let hash = Hashtbl.hash kgram_string in
+      let occupying_lines_repeating = List.map ~f: (fun (_,l,_) -> l) chars in
+      let occupying_lines = List.fold_left
+        ~init: Int.Set.empty
+        ~f: Int.Set.add
+        occupying_lines_repeating in
+      { length; occupying_lines; starting_line; starting_index_in_line; hash; }
+    )
 
 let read_file f =
-  let rec hash_helper f_channel s =
+  let rec hash_helper f_channel lines =
       try
         let line = input_line f_channel in
-        hash_helper f_channel (s^line^"\n")
+        lines @ [line]
       with
       | End_of_file ->
         close_in f_channel;
-        s
+        lines
   in
-  hash_helper (open_in f) ""
-
-(* Refer to preprocessing.mli for this function's speficiations *)
-let hash_file file_content k =
-  let n_grams = k_grams file_content k in
-  List.map (Hashtbl.hash) n_grams
-
-(* Refer to preprocessing.mli for this function's speficiations *)
-let get_file_positions file_content positions k =
-  let n_grams = k_grams file_content k in
-  List.map (fun p ->
-    (p, List.nth n_grams (p - 1))
-  ) positions
-
+  hash_helper (open_in f) [] 
