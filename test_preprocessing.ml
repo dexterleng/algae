@@ -1,229 +1,99 @@
 open OUnit2
 open Preprocessing
+open Core
 
-let ocaml_keywords =
-  ["and"; "as"; "assert"; "asr"; "begin"; "class"; "constraint";
-   "do"; "done"; "downto"; "else"; "end"; "exception"; "external";
-   "false"; "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
-   "inherit"; "initializer"; "land"; "lazy"; "let"; "lor"; "lsl"; "lsr";
-   "lxor"; "match"; "method"; "mod"; "module"; "mutable"; "new"; "nonrec";
-   "object"; "of"; "open"; "or"; "private"; "rec"; "sig"; "struct"; "then";
-   "to"; "true"; "try"; "type"; "val"; "virtual"; "when"; "while"; "with";
-   "Arg"; "Array"; "ArrayLabels"; "Buffer"; "Bytes"; "BytesLabels"; "Callback";
-   "Char"; "Complex"; "Digest"; "Ephemeron"; "Filename"; "Format"; "Gc";
-   "Genlex"; "Hashtbl"; "Int32"; "Int64"; "Lazy"; "Lexing"; "List";
-   "ListLabels"; "Map"; "Marshal"; "MoreLabels"; "Nativeint"; "Oo"; "Parsing";
-   "Printexc"; "Printf"; "Queue"; "Random"; "Scanf"; "Set"; "Sort";
-   "Spacetime"; "Stack"; "StdLabels"; "Stream"; "String"; "StringLabels";
-   "Sys"; "Uchar"; "Weak"; "failwith"]
+let a = 1
 
-let ocaml_spec_chars =
-  ['!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; ';'; '<';
-   '='; '>'; '?'; '@'; '^'; '|'; '~'; '#'; '\"'; '('; ')'; ',';
-   '['; ']'; '{'; '}']
+let build_int_set_from_list ints = List.fold_left
+  ~init: Core.Int.Set.empty
+  ~f: Core.Int.Set.add
+  ints
 
-let ocaml_comments_info_quad = ("", "(*", "*)", true, true)
+let kgram_equals a b =
+  (a.length = b.length) &&
+  (Int.Set.equal a.occupying_lines b.occupying_lines) &&
+  (a.starting_line = b.starting_line) &&
+  (a.starting_index_in_line = b.starting_index_in_line) &&
+  (a.hash = b.hash)
 
-let java_keywords =
-  ["abstract"; "continue"; "for"; "new"; "switch"; "assert"; "default";
-   "package"; "synchronized"; "boolean"; "do"; "if"; "private"; "this"; "break";
-   "double"; "implements"; "protected"; "throw"; "byte"; "else"; "import";
-   "public"; "throws"; "case"; "enum"; "instanceof"; "return"; "transient";
-   "catch"; "extends"; "int"; "short"; "try"; "char"; "final"; "interface";
-   "static"; "void"; "class"; "finally"; "long"; "strictfp"; "volatile";
-   "float"; "native"; "super"; "while"; "Boolean"; "Byte"; "Character"; "Class";
-   "ClassLoader"; "ClassValue"; "Compiler"; "Double"; "Enum"; "Float";
-   "InheritableThreadLocal"; "Integer "; "Long"; "Math"; "Number"; "Object";
-   "Package"; "Process"; "ProcessBuilder"; "Runtime"; "RuntimePermission";
-   "SecurityManager"; "Short"; "StackTraceElement"; "StrictMath"; "String";
-   "StringBuffer"; "StringBuilder"; "System"; "Thread"; "ThreadGroup";
-   "ThreadLocal"; "Throwable"; "Void"; "AbstractCollection"; "AbstractList";
-   "AbstractMap"; "AbstractQueue"; "AbstractSequentialList"; "AbstractSet";
-   "ArrayDeque"; "ArrayList"; "Arrays"; "BitSet"; "Calendar"; "Collections";
-   "Currency"; "Date"; "Dictionary"; "EnumMap"; "EnumSet"; "EventListenerProxy";
-   "EventObject"; "FormattableFlags"; "Formatter"; "GregorianCalendar";
-   "HashMap";"HashSet"; "Hashtable"; "IdentityHashMap"; "LinkedHashMap";
-   "LinkedHashSet"; "LinkedList"; "ListResourceBundle"; "Locale"; "Objects";
-   "Observable"; "PriorityQueue"; "Properties"; "PropertyPermission";
-   "PropertyResourceBundle"; "Random"; "ResourceBundle";
-   "ResourceBundle.Control"; "Scanner"; "ServiceLoader"; "SimpleTimeZone";
-   "Stack"; "StringTokenizer"; "Timer"; "TimerTask"; "TimeZone"; "TreeMap";
-   "TreeSet"; "UUID"; "Vector"; "WeakHashMap"]
-
-let java_spec_chars =
-  ['!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; ';';
-   '<'; '='; '>'; '?'; '^'; '|';  '\"'; '\''; '('; ')'; ','; '['; ']';
-   '{'; '}'; '~'; '@']
-
-let java_comments_info_quad = ("//", "/*", "*/", false, true)
-
-let test_fun_str =
-  "(* Hello World this is a comment *)
-   (* (* This is a nested comment *) *)
-   (* This is a multi line comment
-      This is a multi line comment *)
-   (* This is a multi line (* nested comment
-      Wowie this is *) quite the comment *)
-  let split_and_keep_on_spec_chars spec_chars str =
-  let char_array = str_to_chr_arr str in
-  (List.fold_left
-    (fun acc_arr chr ->
-       let str_of_chr = String.make 1 chr in
-       if List.mem chr spec_chars then
-         List.cons \"\" (List.cons str_of_chr acc_arr)
-       else
-         (* Hello I am yet another comment *)
-         match acc_arr with
-         | h::t -> (String.concat \"\" [h;str_of_chr])::t
-         | [] -> failwith \"Array should never be empty\"
-    )
-    [\"\"]
-    char_array) |> List.filter (fun str -> str <> \"\") |> List.rev"
-
-let expected_res_str = String.concat ""
-    ["letvvv=letv=vvin(List.v(funvv->letv=String.v1vinifList.vvvthenList.v";
-     "(List.vvv)elsematchvwith|v::v->(String.v[v;v])::v|[]->failwithv";
-     ")[]v)|>List.v(funv->v<>)|>List.v"]
-
-let test_fun_str3 = "wow(*wow wow wow*)wow"
-
-let expected_res_str3 = "vv"
-
-let test_fun_str4 = "wow (* wow wow wow"
-
-let expected_res_str4 = "v"
-
-let test_fun_str5 =
-  "/**
-     * A DumbAI is a Controller that always chooses the blank space with the
-     * smallest column number from the row with the smallest row number.
-     */
-    public class DumbAI extends Controller"
-
-let expected_res_str5 = "publicclassvextendsv"
-
-let test_fun_str6 =
-   "// Note: Calling delay here will make the CLUI work a little more
-    Hello World
-    I am the World
-    hahaha"
-
-let expected_res_str6 = "vvvvvvv"
-
-let test_fun_str7 =
-"package controller;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import model.Board;
-import model.Game;
-import model.Location;
-import model.NotImplementedException;
-import model.Player;
-
-/**
- * A DumbAI is a Controller that always chooses the blank space with the
- * smallest column number from the row with the smallest row number.
- */
-public class DumbAI extends Controller {
-
-  public DumbAI(Player me) {
-    super(me);
-    // TODO Auto-generated constructor stub
-    //throw new NotImplementedException();
-  }
-
-  protected @Override Location nextMove(Game g) {
-    // Note: Calling delay here will make the CLUI work a little more
-    // nicely when competing different AIs against each other.
-
-    // TODO Auto-generated method stub
-    //throw new NotImplementedException();
-
-    Board b = g.getBoard();
-    // find available moves
-    for (int row = 0;row<Board.NUM_ROWS;row++) {
-      for(int col = 0;col<Board.NUM_COLS;col++) {
-        Location loc = new Location(row,col);
-        if (b.get(loc) == null) {
-          delay();
-          return loc;
-        }
-
-      }
-    }
-    // wait a bit
-    delay();
-
-    return null;
-  }
-}"
+let rec kgram_list_equals a b =
+  if (List.length a) != (List.length b)
+    then false
+  else match (a, b) with
+    | (kgram_a::rest_a, kgram_b::rest_b) -> (kgram_equals kgram_a kgram_b) && (kgram_list_equals rest_a rest_b)
+    | (_,_) -> true
 
 let tests = [
-  "k_grams_2" >:: (fun _ -> assert_equal (k_grams "test" 3) ["tes"; "est"]);
-  "k_grams_1" >:: (fun _ -> assert_equal (k_grams "Hello World" 5)
-            ["Hello"; "ello "; "llo W"; "lo Wo"; "o Wor"; " Worl"; "World"]);
-  "ocaml_keywords" >:: (fun _ -> assert_equal
-                           (keywords_list "ocaml_info.json")
-                           ocaml_keywords);
-  "ocaml_spec_chars" >:: (fun _ -> assert_equal
-                        (special_chars "ocaml_info.json") ocaml_spec_chars);
-  "ocaml_comments_info" >:: (fun _ -> assert_equal
-                                (comment_info "ocaml_info.json")
-                                ocaml_comments_info_quad);
+  "generate_n_grams works when n < length of array" >:: (fun _ -> assert_equal
+    [
+      [1;2];
+      [2;3];
+      [3;4];
+    ]
+    (generate_n_grams 2 [1;2;3;4])
+  );
+  "generate_n_grams returns one gram when n = length of array" >:: (fun _ -> assert_equal
+    [
+      [1;2;3;4;];
+    ]
+    (generate_n_grams 4 [1;2;3;4])
+  );
+  "generate_n_grams returns zero grams when n > length of array" >:: (fun _ -> assert_equal
+    []
+    (generate_n_grams 5 [1;2;3;4])
+  );
 
-  "java_keywords" >:: (fun _ -> assert_equal
-                          (keywords_list "java_info.json") java_keywords);
-  "java_spec_chars" >:: (fun _ -> assert_equal
-                        (special_chars "java_info.json") java_spec_chars);
-  "java_comments_info" >:: (fun _ -> assert_equal
-                               (comment_info "java_info.json")
-                               java_comments_info_quad);
+  "list_zip zips two lists of same length into a tuple" >:: (fun _ -> assert_equal
+    [
+      (1,3);
+      (2,4);
+    ]
+    (list_zip [1;2] [3;4])
+  );
+  "list_zip zips two lists of different length by ignoring the additional elements of the longer list" >:: (fun _ -> assert_equal
+    [
+      (1,3);
+      (2,4);
+    ]
+    (list_zip [1;2;1000] [3;4])
+  );
 
-
-  "remove_noise" >::
-    (fun _ -> assert_equal
-      (remove_noise
-        ocaml_comments_info_quad
-        test_fun_str
-        ocaml_keywords ocaml_spec_chars
-        false)
-      expected_res_str);
-
-  "remove_noise_3" >::
-    (fun _ -> assert_equal
-      (remove_noise
-        ocaml_comments_info_quad
-        test_fun_str3
-        ocaml_keywords ocaml_spec_chars
-        false)
-      expected_res_str3);
-
-  "remove_noise_4" >::
-    (fun _ -> assert_equal
-      (remove_noise
-        ocaml_comments_info_quad
-        test_fun_str4
-        ocaml_keywords ocaml_spec_chars
-        false)
-      expected_res_str4);
-
-  "remove_noise_5" >::
-    (fun _ -> assert_equal
-      (remove_noise
-        java_comments_info_quad
-        test_fun_str5
-        java_keywords java_spec_chars
-        false)
-      expected_res_str5);
-
-  "remove_noise_6" >::
-    (fun _ -> assert_equal
-      (remove_noise
-        java_comments_info_quad
-        test_fun_str6
-        java_keywords java_spec_chars
-        false)
-      expected_res_str6);
+  "k_grams_with_line_number" >:: (fun _ -> assert_equal
+    ~cmp: kgram_list_equals
+    [
+      { 
+        length = 5;
+        occupying_lines = (build_int_set_from_list [0;1]);
+        starting_line = 0;
+        starting_index_in_line = 0;
+        hash = Hashtbl.hash "hithe";
+      };
+      { 
+        length = 5;
+        occupying_lines = (build_int_set_from_list [0;1]);
+        starting_line = 0;
+        starting_index_in_line = 1;
+        hash = Hashtbl.hash "ither";
+      };
+      { 
+        length = 5;
+        occupying_lines = (build_int_set_from_list [1]);
+        starting_line = 1;
+        starting_index_in_line = 0;
+        hash = Hashtbl.hash "there";
+      };
+      { 
+        length = 5;
+        occupying_lines = (build_int_set_from_list [1;2;]);
+        starting_line = 1;
+        starting_index_in_line = 1;
+        hash = Hashtbl.hash "here.";
+      };
+    ]
+    (k_grams_with_line_number [
+      "hi";
+      "there";
+      ".";
+    ] 5)
+  )
 ]

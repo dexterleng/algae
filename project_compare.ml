@@ -1,4 +1,5 @@
 open Preprocessing
+open Core
 
 let negate f a = not (f a)
 
@@ -8,31 +9,24 @@ let rec list_files_recursively dir =
     with invalid_arg -> true
   in
   match Sys.is_directory dir with
-    | true ->
+    | `Yes ->
       let children = Sys.readdir dir |> Array.to_list in
       children
-        |> List.filter (negate is_hidden)
-        |> List.map (Filename.concat dir)
-        |> List.map list_files_recursively
-        |> List.flatten
-    | false ->
-      [dir]
+        |> List.filter ~f:(negate is_hidden)
+        |> List.map ~f:(Filename.concat dir)
+        |> List.concat_map ~f:list_files_recursively
+    | `No -> [dir]
+    | `Unknown -> [dir]
 
 let list_folders dir =
   Sys.readdir dir
     |> Array.to_list
-    |> List.map (Filename.concat dir)
-    |> List.filter Sys.is_directory
-
-type kgram = {
-  length: int;
-  start_index: int;
-  hash: int;
-}
+    |> List.map ~f:(Filename.concat dir)
+    |> List.filter ~f: (Core.Fn.compose (fun is_dir -> is_dir = `Yes) Sys.is_directory)
 
 type project_file = {
   file_name: string;
-  file_content: string;
+  lines: string list;
   selected_kgrams: kgram list;
 }
 
@@ -58,13 +52,12 @@ type project_compare_result = {
 
 let build_project project_dir ~k ~w =
   let project_files = list_files_recursively project_dir
-    |> List.filter (fun filename -> Filename.check_suffix filename ".java")
-    |> List.map (fun file_name ->
-      let file_content = Preprocessing.read_file file_name in
-      let selected_kgrams = (Preprocessing.hash_file file_content k) 
-        |> Winnowing.winnow w
-        |> List.map (fun (hash, start_index) -> { hash; start_index; length = k; }) in
-      { file_name; file_content; selected_kgrams; }
+    |> List.filter ~f:(fun filename -> Filename.check_suffix filename ".java")
+    |> List.map ~f:(fun file_name ->
+      let lines = Preprocessing.read_file file_name in
+      let kgrams = Preprocessing.k_grams_with_line_number lines k in
+      let selected_kgrams = Winnowing.winnow kgrams ~k:w in
+      { file_name; lines; selected_kgrams; }
     )
   in
   { project_name = project_dir; files = project_files; }
@@ -72,13 +65,13 @@ let build_project project_dir ~k ~w =
 let rec generate_pairs list =
   match list with
     | [] -> []
-    | head::rest -> List.append (List.map (fun o -> (head, o)) rest)  (generate_pairs rest)
+    | head::rest -> List.append (List.map ~f:(fun o -> (head, o)) rest)  (generate_pairs rest)
 
 let rec generate_pairs_between_two_lists list_a list_b =
   match list_a with
     | [] -> []
     | head_a::rest_a -> List.append
-      (List.map (fun b -> (head_a, b)) list_b)
+      (List.map ~f:(fun b -> (head_a, b)) list_b)
       (generate_pairs_between_two_lists rest_a list_b)
 
 let rec list_zip list_a list_b =
@@ -90,8 +83,8 @@ let compare_files project_a_file project_b_file =
   let rec pair_kgrams_with_matching_hashes kgrams_a kgrams_b pairs =
     match kgrams_a with
     | kgram_a::kgrams_a_rest ->
-      let matching_kgrams_b = List.filter (fun kgram_b -> kgram_b.hash = kgram_a.hash) kgrams_b in
-      let new_pairs = pairs @ (List.map (fun kgram_b -> (kgram_a, kgram_b)) matching_kgrams_b) in
+      let matching_kgrams_b = List.filter ~f:(fun kgram_b -> kgram_b.hash = kgram_a.hash) kgrams_b in
+      let new_pairs = pairs @ (List.map ~f:(fun kgram_b -> (kgram_a, kgram_b)) matching_kgrams_b) in
       pair_kgrams_with_matching_hashes kgrams_a_rest kgrams_b new_pairs
     | [] -> pairs
   in
@@ -102,31 +95,6 @@ let compare_files project_a_file project_b_file =
 
 let compare_projects project_a project_b =
   let file_pairs = generate_pairs_between_two_lists project_a.files project_b.files in
-  let file_compare_results = List.map (fun (a, b) -> compare_files a b) file_pairs in
+  let file_compare_results = List.map ~f:(fun (a, b) -> compare_files a b) file_pairs in
   { project_a; project_b; file_compare_results; }
 
-let () =
-  let k = 30 in
-  let w = 40 in
-  let projects_parent_dir = "./tests/OldPractTest/" in
-  let project_dirs = list_folders projects_parent_dir in
-  let projects = List.map (build_project ~k:k ~w:w) project_dirs in
-  let project_pairs = generate_pairs projects in
-  let project_compare_results = List.map (fun (a, b) -> compare_projects a b) project_pairs in
-
-  project_compare_results |> List.iter (fun { project_a; project_b; file_compare_results; } ->
-    Printf.printf "COMPARING PROJECT %s with PROJECT %s" project_a.project_name project_b.project_name;
-    file_compare_results |> List.iter (fun { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density } ->
-      Printf.printf "COMPARING FILE %s with FILE %s" project_a_file.file_name project_b_file.file_name;
-      let kgrams_a = Preprocessing.get_file_positions project_a_file.file_content (matching_kgrams |> List.map fst |> List.map (fun kg -> kg.start_index)) k in
-      let kgrams_b = Preprocessing.get_file_positions project_b_file.file_content (matching_kgrams |> List.map snd |> List.map (fun kg -> kg.start_index)) k in
-      let zip_kgrams = list_zip kgrams_a kgrams_b in
-      zip_kgrams |> List.iter (fun ((_, v1), (_, v2)) ->
-        print_endline v1;
-        print_endline v2;
-        print_float project_a_file_match_density; 
-        print_endline ""
-      );
-      print_endline ""
-    );
-  );
