@@ -6,15 +6,17 @@ let rec generate_n_grams n l =
   else
     []
 
+let yojson_of_int_set s = Int.Set.to_list s
+
 type kgram = {
   length: int;
   (* line number is zero indexed *)
-  occupying_lines: Core.Int.Set.t;
+  occupying_lines: int list;
   (* this is just min of occupying_lines *)
   starting_line: int;
   starting_index_in_line: int;
   hash: int;
-} [@@deriving sexp]
+} [@@deriving yojson]
 
 let rec list_zip list_a list_b =
   match list_a, list_b with
@@ -38,18 +40,6 @@ let k_grams_with_line_number lines k =
       let occupying_lines = List.fold_left
         ~init: Int.Set.empty
         ~f: Int.Set.add
-        occupying_lines_repeating in
+        occupying_lines_repeating |> Int.Set.to_list in
       { length; occupying_lines; starting_line; starting_index_in_line; hash; }
     )
-
-let read_file f =
-  let rec hash_helper f_channel lines =
-      try
-        let line = input_line f_channel in
-        lines @ [line]
-      with
-      | End_of_file ->
-        close_in f_channel;
-        lines
-  in
-  hash_helper (open_in f) [] 
