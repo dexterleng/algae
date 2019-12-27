@@ -109,13 +109,40 @@ let build_projects projects_parent_dir =
   let projects = List.map ~f:(build_project ~k:10 ~w:10) project_dirs in
   projects
 
-type compare_results = project_compare_result list [@@deriving yojson]
+let command =
+  Command.basic
+    ~summary:"MOSS-like plagiarism detector"
+    ~readme:(fun () -> "More detailed information")
+    Command.Param.(
+      map (both
+        (anon ("parent directory of all projects" %: string))
+        (anon ("json result output directory" %: string)))
+       ~f:(fun (projects_parent_dir, output_dir) -> (fun () ->
+          let valid_parent_directory = Sys.is_directory projects_parent_dir in
+          let valid_output_directory = Sys.is_directory output_dir in
+          (if valid_parent_directory <> `Yes then failwith "not a valid directory.");
+          (if valid_output_directory <> `Yes then failwith "not a valid directory.");
+          Out_channel.write_all (Filename.concat output_dir "README.md") ~data: "This is a file created so we do not do a huge computation and find out you can't save in the output directory.";
+          let projects = build_projects projects_parent_dir in
+          let all_compare_result = compare_all_projects projects in
+          List.iter ~f:(fun r ->
+            let filename = Printf.sprintf "%s_%s.json" r.project_a.project_name r.project_b.project_name in
+            let file_dir = Filename.concat output_dir filename in
+            Yojson.Safe.to_file file_dir (project_compare_result_to_yojson r);
+          ) all_compare_result
+       )))
 
 let () =
+  Command.run ~version:"1.0" command
+
+(* let () =
+  for i = 0 to Array.length Sys.argv - 1 do
+    printf "[%i] %s\n" i Sys.argv.(i)
+  done;
   let projects_parent_dir = "./tests/OldPractTest/" in
   let projects = build_projects projects_parent_dir in
   let all_compare_result = compare_all_projects projects in
   List.iter ~f:(fun r ->
     let file_dir = Printf.sprintf "./results/%s_%s.json" r.project_a.project_name r.project_b.project_name in
     Yojson.Safe.to_file file_dir (project_compare_result_to_yojson r);
-  ) all_compare_result
+  ) all_compare_result *)

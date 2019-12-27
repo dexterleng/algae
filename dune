@@ -1,5 +1,5 @@
 (executables
   (names project_compare test)
   (libraries core yojson ounit ppx_deriving_yojson.runtime)
-  (preprocess (pps ppx_deriving.std ppx_deriving_yojson)))
+  (preprocess (pps ppx_jane ppx_deriving.std ppx_deriving_yojson)))
 
