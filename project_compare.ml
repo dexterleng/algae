@@ -4,9 +4,7 @@ open Core
 let negate f a = not (f a)
 
 let rec list_files_recursively dir =
-  let is_hidden d =
-    try d.[0] == '.'
-    with invalid_arg -> true
+  let is_hidden d = d.[0] = '.'
   in
   match Sys.is_directory dir with
     | `Yes ->
@@ -28,12 +26,12 @@ type project_file = {
   file_name: string;
   lines: string list;
   selected_kgrams: kgram list;
-}
+} [@@deriving yojson]
 
 type project = {
   project_name: string;
   files: project_file list;
-}
+} [@@deriving yojson] 
 
 type file_compare_result = {
   project_a_file: project_file;
@@ -42,21 +40,21 @@ type file_compare_result = {
   (* match density is no. of matching kgrams / total no. of kgrams of the file. *)
   project_a_file_match_density: float;
   project_b_file_match_density: float;
-}
+} [@@deriving yojson]
 
 type project_compare_result = {
   project_a: project;
   project_b: project;
   file_compare_results: file_compare_result list;
-}
+} [@@deriving yojson]
 
 let build_project project_dir ~k ~w =
   let project_files = list_files_recursively project_dir
     |> List.filter ~f:(fun filename -> Filename.check_suffix filename ".java")
     |> List.map ~f:(fun file_name ->
-      let lines = Preprocessing.read_file file_name in
+      let lines = In_channel.read_lines file_name in
       let kgrams = Preprocessing.k_grams_with_line_number lines k in
-      let selected_kgrams = Winnowing.winnow kgrams ~k:w in
+      let selected_kgrams = Winnowing.winnow kgrams ~w:w in
       { file_name; lines; selected_kgrams; }
     )
   in
