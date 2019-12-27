@@ -41,15 +41,3 @@ let k_grams_with_line_number lines k =
         occupying_lines_repeating in
       { length; occupying_lines; starting_line; starting_index_in_line; hash; }
     )
-
-let read_file f =
-  let rec hash_helper f_channel lines =
-      try
-        let line = input_line f_channel in
-        lines @ [line]
-      with
-      | End_of_file ->
-        close_in f_channel;
-        lines
-  in
-  hash_helper (open_in f) [] 

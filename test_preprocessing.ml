@@ -17,7 +17,7 @@ let kgram_equals a b =
   (a.hash = b.hash)
 
 let rec kgram_list_equals a b =
-  if (List.length a) != (List.length b)
+  if (List.length a) <> (List.length b)
     then false
   else match (a, b) with
     | (kgram_a::rest_a, kgram_b::rest_b) -> (kgram_equals kgram_a kgram_b) && (kgram_list_equals rest_a rest_b)
