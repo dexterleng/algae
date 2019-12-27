@@ -22,6 +22,8 @@ B /Users/macintosh/.opam/default/lib/parsexp
 B /Users/macintosh/.opam/default/lib/ppx_assert/runtime-lib
 B /Users/macintosh/.opam/default/lib/ppx_bench/runtime-lib
 B /Users/macintosh/.opam/default/lib/ppx_compare/runtime-lib
+B /Users/macintosh/.opam/default/lib/ppx_deriving/runtime
+B /Users/macintosh/.opam/default/lib/ppx_deriving_yojson/runtime
 B /Users/macintosh/.opam/default/lib/ppx_enumerate/runtime-lib
 B /Users/macintosh/.opam/default/lib/ppx_expect/collector
 B /Users/macintosh/.opam/default/lib/ppx_expect/common
@@ -31,6 +33,7 @@ B /Users/macintosh/.opam/default/lib/ppx_inline_test/config
 B /Users/macintosh/.opam/default/lib/ppx_inline_test/runtime-lib
 B /Users/macintosh/.opam/default/lib/ppx_module_timer/runtime
 B /Users/macintosh/.opam/default/lib/ppx_sexp_conv/runtime-lib
+B /Users/macintosh/.opam/default/lib/result
 B /Users/macintosh/.opam/default/lib/sexplib
 B /Users/macintosh/.opam/default/lib/sexplib/unix
 B /Users/macintosh/.opam/default/lib/sexplib0
@@ -68,6 +71,8 @@ S /Users/macintosh/.opam/default/lib/parsexp
 S /Users/macintosh/.opam/default/lib/ppx_assert/runtime-lib
 S /Users/macintosh/.opam/default/lib/ppx_bench/runtime-lib
 S /Users/macintosh/.opam/default/lib/ppx_compare/runtime-lib
+S /Users/macintosh/.opam/default/lib/ppx_deriving/runtime
+S /Users/macintosh/.opam/default/lib/ppx_deriving_yojson/runtime
 S /Users/macintosh/.opam/default/lib/ppx_enumerate/runtime-lib
 S /Users/macintosh/.opam/default/lib/ppx_expect/collector
 S /Users/macintosh/.opam/default/lib/ppx_expect/common
@@ -77,6 +82,7 @@ S /Users/macintosh/.opam/default/lib/ppx_inline_test/config
 S /Users/macintosh/.opam/default/lib/ppx_inline_test/runtime-lib
 S /Users/macintosh/.opam/default/lib/ppx_module_timer/runtime
 S /Users/macintosh/.opam/default/lib/ppx_sexp_conv/runtime-lib
+S /Users/macintosh/.opam/default/lib/result
 S /Users/macintosh/.opam/default/lib/sexplib
 S /Users/macintosh/.opam/default/lib/sexplib/unix
 S /Users/macintosh/.opam/default/lib/sexplib0
@@ -91,4 +97,5 @@ S /Users/macintosh/.opam/default/lib/yojson
 S /usr/local/lib/ocaml
 S /usr/local/lib/ocaml/threads
 S .
+FLG -ppx '/Users/macintosh/code/OCaMOSS/_build/default/.ppx/699f3438e5f9cd0e404470fc5bd150ec/ppx.exe --as-ppx'
 FLG -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs

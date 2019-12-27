@@ -24,12 +24,12 @@ let list_folders dir =
 
 type project_file = {
   file_name: string;
-  lines: string list;
   selected_kgrams: kgram list;
 } [@@deriving yojson]
 
 type project = {
   project_name: string;
+  project_dir: string;
   files: project_file list;
 } [@@deriving yojson] 
 
@@ -51,16 +51,17 @@ type project_compare_result = {
 let cmp_kgram k1 k2 = k1.hash - k2.hash
 
 let build_project project_dir ~k ~w =
+  let project_name = Filename.basename project_dir in
   let project_files = list_files_recursively project_dir
     |> List.filter ~f:(fun filename -> Filename.check_suffix filename ".java")
     |> List.map ~f:(fun file_name ->
       let lines = In_channel.read_lines file_name in
       let kgrams = Preprocessing.k_grams_with_line_number lines k in
       let selected_kgrams = Winnowing.winnow kgrams ~w:w ~cmp:cmp_kgram in
-      { file_name; lines; selected_kgrams; }
+      { file_name; selected_kgrams; }
     )
   in
-  { project_name = project_dir; files = project_files; }
+  { project_name; project_dir; files = project_files; }
 
 let rec generate_pairs list =
   match list with
@@ -93,8 +94,28 @@ let compare_files project_a_file project_b_file =
   let project_b_file_match_density = float_of_int (List.length matching_kgrams) /. float_of_int (List.length project_b_file.selected_kgrams) in
   { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density; project_b_file_match_density; }
 
-let compare_projects project_a project_b =
+let compare_two_projects project_a project_b =
   let file_pairs = generate_pairs_between_two_lists project_a.files project_b.files in
   let file_compare_results = List.map ~f:(fun (a, b) -> compare_files a b) file_pairs in
   { project_a; project_b; file_compare_results; }
 
+let compare_all_projects projects =
+  let project_pairs = generate_pairs projects in
+  let all_compare_result = List.map ~f:(fun (a, b) -> compare_two_projects a b) project_pairs in
+  all_compare_result
+
+let build_projects projects_parent_dir =
+  let project_dirs = list_folders projects_parent_dir in
+  let projects = List.map ~f:(build_project ~k:10 ~w:10) project_dirs in
+  projects
+
+type compare_results = project_compare_result list [@@deriving yojson]
+
+let () =
+  let projects_parent_dir = "./tests/OldPractTest/" in
+  let projects = build_projects projects_parent_dir in
+  let all_compare_result = compare_all_projects projects in
+  List.iter ~f:(fun r ->
+    let file_dir = Printf.sprintf "./results/%s_%s.json" r.project_a.project_name r.project_b.project_name in
+    Yojson.Safe.to_file file_dir (project_compare_result_to_yojson r);
+  ) all_compare_result
