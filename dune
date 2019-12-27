@@ -1,0 +1,4 @@
+(executables
+  (names project_compare test)
+  (libraries core yojson ounit))
+
