@@ -48,13 +48,15 @@ type project_compare_result = {
   file_compare_results: file_compare_result list;
 } [@@deriving yojson]
 
+let cmp_kgram k1 k2 = k1.hash - k2.hash
+
 let build_project project_dir ~k ~w =
   let project_files = list_files_recursively project_dir
     |> List.filter ~f:(fun filename -> Filename.check_suffix filename ".java")
     |> List.map ~f:(fun file_name ->
       let lines = In_channel.read_lines file_name in
       let kgrams = Preprocessing.k_grams_with_line_number lines k in
-      let selected_kgrams = Winnowing.winnow kgrams ~w:w in
+      let selected_kgrams = Winnowing.winnow kgrams ~w:w ~cmp:cmp_kgram in
       { file_name; lines; selected_kgrams; }
     )
   in
