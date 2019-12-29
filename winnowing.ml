@@ -8,7 +8,7 @@ let rec remove_adjacent_duplicates nums = match nums with
 (* cmp function takes in two 'a and returns a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second. 
 e.g. if a = 1 and b = 2 then cmp a b < 0
 *)
-let winnow (nums:'a sexp_list) ~(w:int) ~(cmp: 'a -> 'a -> int) =
+let winnow (nums:'a list) ~(w:int) ~(cmp: 'a -> 'a -> int) =
 	let deque = Deque.create () in
 	let result_indices_mut = ref [] in
 	for i = 0 to (List.length nums) - 1 do
