@@ -4,7 +4,7 @@ open Core
 let negate f a = not (f a)
 
 let rec list_files_recursively dir =
-  let is_hidden d = d.[0] = '.'
+  let is_hidden d = Stdlib.(=) d.[0] '.'
   in
   match Sys.is_directory dir with
     | `Yes ->
@@ -20,7 +20,7 @@ let list_folders dir =
   Sys.readdir dir
     |> Array.to_list
     |> List.map ~f:(Filename.concat dir)
-    |> List.filter ~f: (Core.Fn.compose (fun is_dir -> is_dir = `Yes) Sys.is_directory)
+    |> List.filter ~f: (Core.Fn.compose (fun is_dir -> Stdlib.(=) is_dir `Yes) Sys.is_directory)
 
 type project_file = {
   file_name: string;
@@ -120,8 +120,8 @@ let command =
        ~f:(fun (projects_parent_dir, output_dir) -> (fun () ->
           let valid_parent_directory = Sys.is_directory projects_parent_dir in
           let valid_output_directory = Sys.is_directory output_dir in
-          (if valid_parent_directory <> `Yes then failwith "not a valid directory.");
-          (if valid_output_directory <> `Yes then failwith "not a valid directory.");
+          (if Stdlib.(<>) valid_parent_directory `Yes then failwith "not a valid directory.");
+          (if Stdlib.(<>) valid_output_directory `Yes then failwith "not a valid directory.");
           Out_channel.write_all (Filename.concat output_dir "README.md") ~data: "This is a file created so we do not do a huge computation and find out you can't save in the output directory.";
           let projects = build_projects projects_parent_dir in
           let all_compare_result = compare_all_projects projects in
