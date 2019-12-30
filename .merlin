@@ -20,7 +20,6 @@ B /Users/macintosh/.opam/default/lib/core_kernel/version_util
 B /Users/macintosh/.opam/default/lib/easy-format
 B /Users/macintosh/.opam/default/lib/fieldslib
 B /Users/macintosh/.opam/default/lib/jane-street-headers
-B /Users/macintosh/.opam/default/lib/ounit
 B /Users/macintosh/.opam/default/lib/ounit2
 B /Users/macintosh/.opam/default/lib/ounit2/advanced
 B /Users/macintosh/.opam/default/lib/parsexp
@@ -75,7 +74,6 @@ S /Users/macintosh/.opam/default/lib/core_kernel/version_util
 S /Users/macintosh/.opam/default/lib/easy-format
 S /Users/macintosh/.opam/default/lib/fieldslib
 S /Users/macintosh/.opam/default/lib/jane-street-headers
-S /Users/macintosh/.opam/default/lib/ounit
 S /Users/macintosh/.opam/default/lib/ounit2
 S /Users/macintosh/.opam/default/lib/ounit2/advanced
 S /Users/macintosh/.opam/default/lib/parsexp
@@ -109,5 +107,5 @@ S /Users/macintosh/.opam/default/lib/yojson
 S /usr/local/lib/ocaml
 S /usr/local/lib/ocaml/threads
 S .
-FLG -ppx '/Users/macintosh/code/OCaMOSS/_build/default/.ppx/c2de79c3d9f244cfca44a54cdf8de2fe/ppx.exe --as-ppx'
+FLG -ppx '/Users/macintosh/code/algae/_build/default/.ppx/c2de79c3d9f244cfca44a54cdf8de2fe/ppx.exe --as-ppx'
 FLG -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs
