@@ -2,76 +2,42 @@ open OUnit2
 open Preprocessing
 open Core
 
+let doc1 = [
+    Char 'a'; Newline; Char 'b'; Char 'c'; Char 'd'
+]
+
+let doc2 = [
+    Char 'a'; Newline; Char 'b'; Newline; Char 'c'; Char 'd'
+]
+
+
 let tests = [
-  "generate_n_grams works when n < length of array" >:: (fun _ -> assert_equal
-    [
-      [1;2];
-      [2;3];
-      [3;4];
-    ]
-    (generate_n_grams 2 [1;2;3;4])
-  );
-  "generate_n_grams returns one gram when n = length of array" >:: (fun _ -> assert_equal
-    [
-      [1;2;3;4;];
-    ]
-    (generate_n_grams 4 [1;2;3;4])
-  );
-  "generate_n_grams returns zero grams when n > length of array" >:: (fun _ -> assert_equal
-    []
-    (generate_n_grams 5 [1;2;3;4])
+  "take_ignoring_newline" >:: (fun _ -> assert_equal
+  "abc"
+  (take_ignoring_newline doc1 3)
   );
 
-  "list_zip zips two lists of same length into a tuple" >:: (fun _ -> assert_equal
-    [
-      (1,3);
-      (2,4);
-    ]
-    (list_zip [1;2] [3;4])
-  );
-  "list_zip zips two lists of different length by ignoring the additional elements of the longer list" >:: (fun _ -> assert_equal
-    [
-      (1,3);
-      (2,4);
-    ]
-    (list_zip [1;2;1000] [3;4])
+  "take_ignoring_newline returns all chars when n > no. of chars" >:: (fun _ -> assert_equal
+  "abcd" 
+  (take_ignoring_newline doc1 9)
   );
 
-  "k_grams_with_line_number" >:: (fun _ -> assert_equal
-    [
-      { 
-        length = 5;
-        occupying_lines = [0;1];
-        starting_line = 0;
-        starting_index_in_line = 0;
-        hash = Hashtbl.hash "hithe";
-      };
-      { 
-        length = 5;
-        occupying_lines = [0;1];
-        starting_line = 0;
-        starting_index_in_line = 1;
-        hash = Hashtbl.hash "ither";
-      };
-      { 
-        length = 5;
-        occupying_lines = [1];
-        starting_line = 1;
-        starting_index_in_line = 0;
-        hash = Hashtbl.hash "there";
-      };
-      { 
-        length = 5;
-        occupying_lines = [1;2;];
-        starting_line = 1;
-        starting_index_in_line = 1;
-        hash = Hashtbl.hash "here.";
-      };
-    ]
-    (k_grams_with_line_number [
-      "hi";
-      "there";
-      ".";
-    ] 5)
-  )
+  "count_newline_in_window" >:: (fun _ -> assert_equal
+    2
+    (count_newline_in_window doc2 4)
+  );
+
+  "count_newline_in_window fails when n > no. of chars" >:: (fun _ -> assert_raises
+    (Failure "n > no. of chars") 
+    (fun () -> count_newline_in_window doc2 5)
+  );
+
+  "generate_n_gram_from_document" >:: (fun _ -> assert_equal
+  [
+      { hash = Hashtbl.hash "ab"; length = 2; starting_line = 0; lines_occupied = 2 };
+      { hash = Hashtbl.hash "bc"; length = 2; starting_line = 1; lines_occupied = 1 };
+      { hash = Hashtbl.hash "cd"; length = 2; starting_line = 1; lines_occupied = 1 };
+  ]
+  (generate_n_gram_from_document doc1 2)
+  );
 ]
