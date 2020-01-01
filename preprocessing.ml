@@ -1,20 +1,11 @@
 open Core
 
-let rec generate_n_grams n l =
-  if n <= List.length l
-    then (List.take l n)::(generate_n_grams n (List.drop l 1))
-  else
-    []
-
-let yojson_of_int_set s = Int.Set.to_list s
 
 type kgram = {
   length: int;
-  (* line number is zero indexed *)
-  occupying_lines: int list;
-  (* this is just min of occupying_lines *)
+  lines_occupied: int;
+  (* zero-indexed; line 1 is 0 *)
   starting_line: int;
-  starting_index_in_line: int;
   hash: int;
 } [@@deriving yojson]
 
@@ -23,23 +14,52 @@ let rec list_zip list_a list_b =
     | head_a::rest_a, head_b::rest_b -> (head_a, head_b)::(list_zip rest_a rest_b)
     | _, _ -> []
 
-let k_grams_with_line_number lines k =
-  let chars_with_position = List.concat_mapi ~f:(fun line_index line ->
-    let chars = List.mapi ~f:(fun char_index char -> (char, line_index, char_index)) (String.to_list line) in
-    chars
-  ) lines
-  in
-  let k_grams = generate_n_grams k chars_with_position in
-  k_grams
-    |> List.map ~f:(fun chars ->
-      let length = k in
-      let (_, starting_line, starting_index_in_line) = (List.nth_exn chars 0) in
-      let kgram_string = String.of_char_list (List.map ~f:(fun (c,_,_) -> c) chars) in
-      let hash = Hashtbl.hash kgram_string in
-      let occupying_lines_repeating = List.map ~f: (fun (_,l,_) -> l) chars in
-      let occupying_lines = List.fold_left
-        ~init: Int.Set.empty
-        ~f: Int.Set.add
-        occupying_lines_repeating |> Int.Set.to_list in
-      { length; occupying_lines; starting_line; starting_index_in_line; hash; }
-    )
+type document = Char of char | Newline
+
+let convert_to_document lines = 
+    List.concat_map 
+        ~f:(fun line -> 
+            let char_list = String.to_list line in 
+            let rev_chars = List.map ~f:(fun c -> Char c)  (List.rev char_list) in
+            List.rev (Newline::rev_chars)
+        )
+        lines
+
+let take_ignoring_newline doc n = 
+    let rec fn doc chars char_count =
+        if char_count = n then 
+            String.of_char_list (List.rev chars)
+        else match doc with
+        | (Char c) :: rest -> fn rest (c::chars) (char_count + 1)
+        | Newline :: rest -> fn rest chars char_count
+        | [] -> String.of_char_list (List.rev chars)
+    in
+    fn doc [] 0
+
+
+let count_newline_in_window doc n =
+    let rec fn doc n char_count newline_count =
+        if char_count = n then newline_count
+        else
+            match doc with
+            | Char _ :: rest -> fn rest n (char_count + 1) newline_count
+            | Newline :: rest -> fn rest n char_count (newline_count + 1)
+            | [] -> failwith "n > no. of chars"
+    in
+    fn doc n 0 0
+
+let generate_n_gram_from_document doc n =
+    let rec fn doc n curr_line =
+        match doc with
+        | Char(_)::rest -> 
+            (try
+                let kgram_chars = take_ignoring_newline doc n in
+                let lines_occupied = (count_newline_in_window doc n) + 1 in
+                let hash = Hashtbl.hash kgram_chars in
+                let ngram = { length = n; lines_occupied; hash; starting_line = curr_line; } in
+                ngram::(fn rest n curr_line)
+            with | Failure _ -> [])
+        | Newline::rest -> fn rest n (curr_line + 1)
+        | [] -> []
+    in
+    fn doc n 0
