@@ -56,7 +56,8 @@ let build_project project_dir ~k ~w =
     |> List.filter ~f:(fun filename -> Filename.check_suffix filename ".java")
     |> List.map ~f:(fun file_name ->
       let lines = In_channel.read_lines file_name in
-      let kgrams = Preprocessing.k_grams_with_line_number lines k in
+      let doc = Preprocessing.convert_to_document lines in
+      let kgrams = Preprocessing.generate_n_gram_from_document doc k in
       let selected_kgrams = Winnowing.winnow kgrams ~w:w ~cmp:cmp_kgram in
       { file_name; selected_kgrams; }
     )
