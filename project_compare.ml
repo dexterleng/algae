@@ -82,15 +82,14 @@ let rec list_zip list_a list_b =
     | _, _ -> []
 
 let compare_files project_a_file project_b_file =
-  let rec pair_kgrams_with_matching_hashes kgrams_a kgrams_b pairs =
-    match kgrams_a with
-    | kgram_a::kgrams_a_rest ->
-      let matching_kgrams_b = List.filter ~f:(fun kgram_b -> kgram_b.hash = kgram_a.hash) kgrams_b in
-      let new_pairs = pairs @ (List.map ~f:(fun kgram_b -> (kgram_a, kgram_b)) matching_kgrams_b) in
-      pair_kgrams_with_matching_hashes kgrams_a_rest kgrams_b new_pairs
-    | [] -> pairs
+  let pair_matching_kgrams kgrams_a kgrams_b =
+    List.concat_map kgrams_a ~f:(fun a ->
+        List.map
+            (List.filter kgrams_b ~f:(fun b -> a.hash = b.hash))
+            ~f:(fun b -> (a, b))
+    )
   in
-  let matching_kgrams = pair_kgrams_with_matching_hashes project_a_file.selected_kgrams project_b_file.selected_kgrams [] in
+  let matching_kgrams = pair_matching_kgrams project_a_file.selected_kgrams project_b_file.selected_kgrams in
   let project_a_file_match_density = float_of_int (List.length matching_kgrams) /. float_of_int (List.length project_a_file.selected_kgrams) in
   let project_b_file_match_density = float_of_int (List.length matching_kgrams) /. float_of_int (List.length project_b_file.selected_kgrams) in
   { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density; project_b_file_match_density; }
@@ -102,7 +101,11 @@ let compare_two_projects project_a project_b =
 
 let compare_all_projects projects =
   let project_pairs = generate_pairs projects in
-  let all_compare_result = List.map ~f:(fun (a, b) -> compare_two_projects a b) project_pairs in
+  let all_compare_result = List.mapi ~f:(fun i -> fun (a, b) ->
+      let result = compare_two_projects a b in
+      Printf.printf "%d / %d project comparison complete\n" (i + 1) (List.length project_pairs);
+      result
+  ) project_pairs in
   all_compare_result
 
 let build_projects projects_parent_dir =
