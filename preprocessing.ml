@@ -27,11 +27,12 @@ let convert_to_document lines =
 
 let take_ignoring_newline doc n = 
     let rec fn doc chars char_count =
-        if char_count = n then String.of_char_list chars 
+        if char_count = n then 
+            String.of_char_list (List.rev chars)
         else match doc with
-        | (Char c) :: rest -> fn rest (chars @ [c]) (char_count + 1)
+        | (Char c) :: rest -> fn rest (c::chars) (char_count + 1)
         | Newline :: rest -> fn rest chars char_count
-        | [] -> String.of_char_list chars 
+        | [] -> String.of_char_list (List.rev chars)
     in
     fn doc [] 0
 
