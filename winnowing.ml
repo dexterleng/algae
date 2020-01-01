@@ -10,7 +10,7 @@ e.g. if a = 1 and b = 2 then cmp a b < 0
 *)
 let winnow (nums:'a list) ~(w:int) ~(cmp: 'a -> 'a -> int) =
 	let deque = Deque.create () in
-	let result_indices_mut = ref [] in
+	let result_indices_rev_mut = ref [] in
 	for i = 0 to (List.length nums) - 1 do
 		(if i >= w && (Deque.peek_front_exn deque) <= (i - w) then
 			Deque.drop_front ~n:1 deque;
@@ -20,10 +20,10 @@ let winnow (nums:'a list) ~(w:int) ~(cmp: 'a -> 'a -> int) =
 		done);
 		Deque.enqueue_back deque i;
 		(if i >= w - 1 then
-			result_indices_mut := (!result_indices_mut @ [Deque.peek_front_exn deque]);
+            result_indices_rev_mut := (Deque.peek_front_exn deque)::!result_indices_rev_mut;
 		);
 	done;
-	let result_indices = !result_indices_mut in
+	let result_indices = List.rev !result_indices_rev_mut in
 	let result_indices_without_adj_dups = remove_adjacent_duplicates result_indices in
 	let result = List.map ~f:(List.nth_exn nums) result_indices_without_adj_dups in
 	result
