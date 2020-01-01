@@ -1,12 +1,5 @@
 open Core
 
-let rec generate_n_grams n l =
-  if n <= List.length l
-    then (List.take l n)::(generate_n_grams n (List.drop l 1))
-  else
-    []
-
-let yojson_of_int_set s = Int.Set.to_list s
 
 type kgram = {
   length: int;
@@ -23,7 +16,14 @@ let rec list_zip list_a list_b =
 
 type document = Char of char | Newline
 
-let convert_to_document lines = List.concat_map ~f:(fun line -> (List.map ~f:(fun c -> Char c) line) @ [Newline] ) lines
+let convert_to_document lines = 
+    List.concat_map 
+        ~f:(fun line -> 
+            let char_list = String.to_list line in 
+            let rev_chars = List.map ~f:(fun c -> Char c)  (List.rev char_list) in
+            List.rev (Newline::rev_chars)
+        )
+        lines
 
 let take_ignoring_newline doc n = 
     let rec fn doc chars char_count =

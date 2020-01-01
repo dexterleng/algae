@@ -7,11 +7,22 @@ let doc1 = [
 ]
 
 let doc2 = [
-    Char 'a'; Newline; Char 'b'; Newline; Char 'c'; Char 'd'
+    Char 'a'; Newline; Char 'b'; Newline; Char 'c'; Char 'd'; Newline;
+]
+
+let doc2_lines = [
+ "a";
+ "b";
+ "cd";
 ]
 
 
 let tests = [
+  "convert_to_document" >:: (fun _ -> assert_equal
+  doc2
+  (convert_to_document doc2_lines)
+  );
+
   "take_ignoring_newline" >:: (fun _ -> assert_equal
   "abc"
   (take_ignoring_newline doc1 3)
