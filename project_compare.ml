@@ -78,13 +78,6 @@ let build_project project_dir ~k ~w =
   in
   { project_name; project_dir; files = project_files; }
 
-let generate_pairs list =
-  let rec fn list result =
-    match list with
-    | [] -> result 
-    | head::rest -> fn rest ((List.map ~f:(fun o -> (head, o)) rest) @ result)
-  in
-  fn list []
 let compare_files project_a_file project_b_file =
   let pair_matching_kgrams kgrams_a_by_hash kgrams_b_by_hash =
     let hashes_a = Hashtbl.keys kgrams_a_by_hash in
@@ -108,12 +101,20 @@ let compare_two_projects project_a project_b =
   let file_compare_results = List.map ~f:(fun (a, b) -> compare_files a b) file_pairs in
   { project_a; project_b; file_compare_results; }
 
+let generate_pairs list =
+  let rec fn list result =
+    match list with
+    | [] -> result 
+    | head::rest -> fn rest ((List.map ~f:(fun o -> (head, o)) rest) @ result)
+  in
+  fn list []
+
 let compare_all_projects projects =
   let project_pairs = generate_pairs projects in
-  let all_compare_result = List.map ~f:(fun (a, b) ->
-     compare_two_projects a b
+  let all_compare_result_thunk = List.map ~f:(fun (a, b) ->
+     fun () -> compare_two_projects a b
   ) project_pairs in
-  all_compare_result
+  all_compare_result_thunk
 
 let build_projects projects_parent_dir =
   let project_dirs = list_folders projects_parent_dir in
@@ -135,9 +136,11 @@ let command =
           (if Stdlib.(<>) valid_output_directory `Yes then failwith "not a valid directory.");
           Out_channel.write_all (Filename.concat output_dir "README.md") ~data: "This is a file created so we do not do a huge computation and find out you can't save in the output directory.";
           let projects = build_projects projects_parent_dir in
+          print_endline "Projects have been generated and kgrams have been selected. Performing comparisons.";
           let all_compare_result = compare_all_projects projects in
-          print_endline "Comparison computation complete. Performing serialization";
-          List.iter ~f:(fun r ->
+          print_endline "";
+          List.iter ~f:(fun result_thunk ->
+            let r = result_thunk () in
             let filename = Printf.sprintf "%s_%s.json" r.project_a.project_name r.project_b.project_name in
             let file_dir = Filename.concat output_dir filename in
             Yojson.Safe.to_file file_dir (project_compare_result_to_yojson r);
