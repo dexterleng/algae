@@ -78,23 +78,13 @@ let build_project project_dir ~k ~w =
   in
   { project_name; project_dir; files = project_files; }
 
-let rec generate_pairs list =
-  match list with
-    | [] -> []
-    | head::rest -> List.append (List.map ~f:(fun o -> (head, o)) rest)  (generate_pairs rest)
-
-let rec generate_pairs_between_two_lists list_a list_b =
-  match list_a with
-    | [] -> []
-    | head_a::rest_a -> List.append
-      (List.map ~f:(fun b -> (head_a, b)) list_b)
-      (generate_pairs_between_two_lists rest_a list_b)
-
-let rec list_zip list_a list_b =
-  match list_a, list_b with
-    | head_a::rest_a, head_b::rest_b -> (head_a, head_b)::(list_zip rest_a rest_b)
-    | _, _ -> []
-
+let generate_pairs list =
+  let rec fn list result =
+    match list with
+    | [] -> result 
+    | head::rest -> fn rest ((List.map ~f:(fun o -> (head, o)) rest) @ result)
+  in
+  fn list []
 let compare_files project_a_file project_b_file =
   let pair_matching_kgrams kgrams_a_by_hash kgrams_b_by_hash =
     let hashes_a = Hashtbl.keys kgrams_a_by_hash in
@@ -107,21 +97,21 @@ let compare_files project_a_file project_b_file =
             | Some(x) -> x
             | None -> []
         in
-        generate_pairs_between_two_lists matching_kgrams_a matching_kgrams_b
+        List.cartesian_product matching_kgrams_a matching_kgrams_b
     )
   in
   let matching_kgrams = pair_matching_kgrams project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
   { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density = 0.0; project_b_file_match_density = 0.0; }
 
 let compare_two_projects project_a project_b =
-  let file_pairs = generate_pairs_between_two_lists project_a.files project_b.files in
+  let file_pairs = List.cartesian_product project_a.files project_b.files in
   let file_compare_results = List.map ~f:(fun (a, b) -> compare_files a b) file_pairs in
   { project_a; project_b; file_compare_results; }
 
 let compare_all_projects projects =
   let project_pairs = generate_pairs projects in
   let all_compare_result = List.map ~f:(fun (a, b) ->
-      compare_two_projects a b
+     compare_two_projects a b
   ) project_pairs in
   all_compare_result
 
