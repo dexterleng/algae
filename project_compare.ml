@@ -93,8 +93,36 @@ let compare_files project_a_file project_b_file =
         List.cartesian_product matching_kgrams_a matching_kgrams_b
     )
   in
+  
+  let calculate_match_density kgrams_a_by_hash kgrams_b_by_hash =
+      let hashes_a = Hashtbl.keys kgrams_a_by_hash in
+      let calculate_number_of_kgrams kgrams_by_hash =
+          let nested_kgrams = Hashtbl.to_alist kgrams_by_hash |> List.map ~f:snd in
+          let kgram_count = List.fold_left nested_kgrams ~init:0 ~f:(fun count -> fun kgrams -> count + List.length kgrams) in   
+          kgram_count
+      in
+      let rec fn hashes_a match_count_a match_count_b =
+          match hashes_a with
+          | hash_a::rest_a ->
+            let matching_kgrams_a = match (Hashtbl.find kgrams_a_by_hash hash_a) with
+                | Some(x) -> x
+                | None -> []
+            in
+            let matching_kgrams_b = match (Hashtbl.find kgrams_b_by_hash hash_a) with
+                | Some(x) -> x
+                | None -> []
+            in
+            fn rest_a (match_count_a + List.length matching_kgrams_a) (match_count_b + List.length matching_kgrams_b)
+          | [] ->
+            let density_a = (float_of_int match_count_a) /. (float_of_int (calculate_number_of_kgrams kgrams_a_by_hash)) in
+            let density_b = (float_of_int match_count_b) /. (float_of_int (calculate_number_of_kgrams kgrams_b_by_hash)) in
+            (density_a, density_b)
+      in
+      fn hashes_a 0 0
+  in
   let matching_kgrams = pair_matching_kgrams project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
-  { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density = 0.0; project_b_file_match_density = 0.0; }
+  let (project_a_file_match_density, project_b_file_match_density) = calculate_match_density project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
+  { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density; project_b_file_match_density; }
 
 let compare_two_projects project_a project_b =
   let file_pairs = List.cartesian_product project_a.files project_b.files in
@@ -149,15 +177,3 @@ let command =
 
 let () =
   Command.run ~version:"1.0" command
-
-(* let () =
-  for i = 0 to Array.length Sys.argv - 1 do
-    printf "[%i] %s\n" i Sys.argv.(i)
-  done;
-  let projects_parent_dir = "./tests/OldPractTest/" in
-  let projects = build_projects projects_parent_dir in
-  let all_compare_result = compare_all_projects projects in
-  List.iter ~f:(fun r ->
-    let file_dir = Printf.sprintf "./results/%s_%s.json" r.project_a.project_name r.project_b.project_name in
-    Yojson.Safe.to_file file_dir (project_compare_result_to_yojson r);
-  ) all_compare_result *)
