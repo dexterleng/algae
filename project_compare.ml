@@ -78,15 +78,23 @@ let build_project project_dir ~k ~w =
   in
   { project_name; project_dir; files = project_files; }
 
+let intersect_int_lists l1 l2 =
+    let s1 = Set.of_list (module Int) l1 in
+    let s2 = Set.of_list (module Int) l2 in
+    Set.to_list (Set.inter s1 s2)
+
 let compare_files project_a_file project_b_file =
   let pair_matching_kgrams kgrams_a_by_hash kgrams_b_by_hash =
     let hashes_a = Hashtbl.keys kgrams_a_by_hash in
-    List.concat_map hashes_a ~f:(fun hash_a ->
-        let matching_kgrams_a = match (Hashtbl.find kgrams_a_by_hash hash_a) with
+    let hashes_b = Hashtbl.keys kgrams_b_by_hash in
+    let intersecting_hashes = intersect_int_lists hashes_a hashes_b in
+
+    List.concat_map intersecting_hashes ~f:(fun hash ->
+        let matching_kgrams_a = match (Hashtbl.find kgrams_a_by_hash hash) with
             | Some(x) -> x
             | None -> []
         in
-        let matching_kgrams_b = match (Hashtbl.find kgrams_b_by_hash hash_a) with
+        let matching_kgrams_b = match (Hashtbl.find kgrams_b_by_hash hash) with
             | Some(x) -> x
             | None -> []
         in
@@ -96,30 +104,35 @@ let compare_files project_a_file project_b_file =
   
   let calculate_match_density kgrams_a_by_hash kgrams_b_by_hash =
       let hashes_a = Hashtbl.keys kgrams_a_by_hash in
+      let hashes_b = Hashtbl.keys kgrams_b_by_hash in
+      let intersecting_hashes = intersect_int_lists hashes_a hashes_b in
+
       let calculate_number_of_kgrams kgrams_by_hash =
           let nested_kgrams = Hashtbl.to_alist kgrams_by_hash |> List.map ~f:snd in
           let kgram_count = List.fold_left nested_kgrams ~init:0 ~f:(fun count -> fun kgrams -> count + List.length kgrams) in   
           kgram_count
       in
-      let rec fn hashes_a match_count_a match_count_b =
-          match hashes_a with
-          | hash_a::rest_a ->
-            let matching_kgrams_a = match (Hashtbl.find kgrams_a_by_hash hash_a) with
+
+      let rec fn hashes match_count_a match_count_b =
+          match hashes with
+          | hash::rest ->
+            let matching_kgrams_a = match (Hashtbl.find kgrams_a_by_hash hash) with
                 | Some(x) -> x
                 | None -> []
             in
-            let matching_kgrams_b = match (Hashtbl.find kgrams_b_by_hash hash_a) with
+            let matching_kgrams_b = match (Hashtbl.find kgrams_b_by_hash hash) with
                 | Some(x) -> x
                 | None -> []
             in
-            fn rest_a (match_count_a + List.length matching_kgrams_a) (match_count_b + List.length matching_kgrams_b)
+            fn rest (match_count_a + List.length matching_kgrams_a) (match_count_b + List.length matching_kgrams_b)
           | [] ->
             let density_a = (float_of_int match_count_a) /. (float_of_int (calculate_number_of_kgrams kgrams_a_by_hash)) in
             let density_b = (float_of_int match_count_b) /. (float_of_int (calculate_number_of_kgrams kgrams_b_by_hash)) in
             (density_a, density_b)
       in
-      fn hashes_a 0 0
+      fn intersecting_hashes 0 0
   in
+
   let matching_kgrams = pair_matching_kgrams project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
   let (project_a_file_match_density, project_b_file_match_density) = calculate_match_density project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
   { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density; project_b_file_match_density; }
