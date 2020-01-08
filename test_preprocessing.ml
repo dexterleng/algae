@@ -45,9 +45,9 @@ let tests = [
 
   "generate_n_gram_from_document" >:: (fun _ -> assert_equal
   [
-      { hash = Hashtbl.hash "ab"; length = 2; starting_line = 0; lines_occupied = 2 };
-      { hash = Hashtbl.hash "bc"; length = 2; starting_line = 1; lines_occupied = 1 };
-      { hash = Hashtbl.hash "cd"; length = 2; starting_line = 1; lines_occupied = 1 };
+      { hash = Hashtbl.hash "ab"; length = 2; starting_line = 0; lines_occupied = 2; starting_index_in_line = 0; };
+      { hash = Hashtbl.hash "bc"; length = 2; starting_line = 1; lines_occupied = 1; starting_index_in_line = 0; };
+      { hash = Hashtbl.hash "cd"; length = 2; starting_line = 1; lines_occupied = 1; starting_index_in_line = 1; };
   ]
   (generate_n_gram_from_document doc1 2)
   );
