@@ -52,7 +52,7 @@ B /Users/macintosh/.opam/default/lib/variantslib
 B /Users/macintosh/.opam/default/lib/yojson
 B /usr/local/lib/ocaml
 B /usr/local/lib/ocaml/threads
-B _build/default/.project_compare.eobjs/byte
+B _build/default/.start.eobjs/byte
 S /Users/macintosh/.opam/default/lib/base
 S /Users/macintosh/.opam/default/lib/base/base_internalhash_types
 S /Users/macintosh/.opam/default/lib/base/caml
