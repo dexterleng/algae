@@ -16,6 +16,8 @@ B /Users/macintosh/.opam/default/lib/core_kernel
 B /Users/macintosh/.opam/default/lib/core_kernel/base_for_tests
 B /Users/macintosh/.opam/default/lib/core_kernel/bounded_int_table
 B /Users/macintosh/.opam/default/lib/core_kernel/flags
+B /Users/macintosh/.opam/default/lib/core_kernel/pairing_heap
+B /Users/macintosh/.opam/default/lib/core_kernel/tuple_pool
 B /Users/macintosh/.opam/default/lib/core_kernel/version_util
 B /Users/macintosh/.opam/default/lib/easy-format
 B /Users/macintosh/.opam/default/lib/fieldslib
@@ -70,6 +72,8 @@ S /Users/macintosh/.opam/default/lib/core_kernel
 S /Users/macintosh/.opam/default/lib/core_kernel/base_for_tests
 S /Users/macintosh/.opam/default/lib/core_kernel/bounded_int_table
 S /Users/macintosh/.opam/default/lib/core_kernel/flags
+S /Users/macintosh/.opam/default/lib/core_kernel/pairing_heap
+S /Users/macintosh/.opam/default/lib/core_kernel/tuple_pool
 S /Users/macintosh/.opam/default/lib/core_kernel/version_util
 S /Users/macintosh/.opam/default/lib/easy-format
 S /Users/macintosh/.opam/default/lib/fieldslib

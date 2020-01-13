@@ -187,6 +187,24 @@ let compare_all_projects projects =
   ) project_pairs in
   all_compare_result_thunk
 
+let top_k_file_compare_results project_compare_result_thunks ~k =
+    let cmp a b = (max a.project_a_file_line_matches a.project_b_file_line_matches) - (max b.project_a_file_line_matches b.project_b_file_line_matches) in
+    let heap = Pairing_heap.create ~cmp:cmp () in
+    List.iter project_compare_result_thunks ~f:(fun thunk ->
+        let project_compare_result = thunk () in
+        let file_compare_results = project_compare_result.file_compare_results in
+        List.iter file_compare_results ~f:(fun file_compare_result ->
+            if ((Pairing_heap.length heap) < k) then begin
+                Pairing_heap.add heap file_compare_result;
+            end else if (cmp file_compare_result (Pairing_heap.top_exn heap)) > 0 then begin
+                let _ : file_compare_result = Pairing_heap.pop_exn heap in
+                Pairing_heap.add heap file_compare_result;
+            end;
+            
+        );
+    );
+    List.rev (List.sort (Pairing_heap.to_list heap) ~compare:cmp)
+
 let build_projects projects_parent_dir =
   let project_dirs = list_folders projects_parent_dir in
   let projects = List.map ~f:(build_project ~k:10 ~w:10) project_dirs in
