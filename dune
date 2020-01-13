@@ -1,5 +1,5 @@
 (executables
   (names start test)
-  (libraries core yojson ounit2 ppx_deriving_yojson.runtime)
+  (libraries core core_kernel.pairing_heap yojson ounit2 ppx_deriving_yojson.runtime)
   (preprocess (pps ppx_jane ppx_deriving.std ppx_deriving_yojson)))
 
