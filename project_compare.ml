@@ -31,7 +31,7 @@ let kgrams_by_hash_to_yojson m =
 let kgrams_by_hash_of_yojson (_: Yojson.Safe.t) = Error "You cannot deserialize now!"
 
 type project_file = {
-  file_name: string;
+  file_dir: string;
   selected_kgrams_by_hash: kgrams_by_hash;
 } [@@deriving yojson]
 
@@ -70,13 +70,14 @@ let build_project project_dir ~k ~w =
   let project_name = Filename.basename project_dir in
   let project_files = list_files_recursively project_dir
     |> List.filter ~f:(fun filename -> Filename.check_suffix filename ".java")
-    |> List.map ~f:(fun file_name ->
-      let lines = In_channel.read_lines file_name in
+    |> List.map ~f:(fun file_dir ->
+      let file_dir_from_project_root = Filename.concat project_name (String.chop_prefix_exn file_dir ~prefix:project_dir) in
+      let lines = In_channel.read_lines file_dir in
       let doc = Preprocessing.convert_to_document lines in
       let kgrams = Preprocessing.generate_n_gram_from_document doc k in
       let selected_kgrams = Winnowing.winnow kgrams ~w:w ~cmp:cmp_kgram in
       let selected_kgrams_by_hash = build_kgram_by_hash_map selected_kgrams in
-      { file_name; selected_kgrams_by_hash; }
+      { file_dir = file_dir_from_project_root; selected_kgrams_by_hash; }
     )
   in
   { project_name; project_dir; files = project_files; }
