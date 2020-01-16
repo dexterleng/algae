@@ -158,11 +158,10 @@ let compare_files project_a_file project_b_file =
             | Some(x) -> x
             | None -> []
         in
-        List.cartesian_product matching_kgrams_a matching_kgrams_b
+    List.filter (List.cartesian_product matching_kgrams_a matching_kgrams_b) ~f:(fun (a, b) -> String.(=) a.str b.str)
     )
   in
   
-
   let matching_kgrams = pair_matching_kgrams project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
   let (project_a_file_match_density, project_b_file_match_density) = calculate_match_density project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
   let (project_a_file_line_matches, project_b_file_line_matches) = calculate_line_matches project_a_file.selected_kgrams_by_hash project_b_file.selected_kgrams_by_hash in
