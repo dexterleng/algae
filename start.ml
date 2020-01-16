@@ -8,17 +8,20 @@ let command =
   Command.basic
     ~summary:"MOSS-like plagiarism detector"
     ~readme:(fun () -> "More detailed information")
-    Command.Param.(
-      map (both
-        (anon ("parent directory of all projects" %: string))
-        (anon ("json result output directory" %: string)))
-       ~f:(fun (projects_parent_dir, output_dir) -> (fun () ->
-          let valid_parent_directory = Sys.is_directory projects_parent_dir in
+    Command.Let_syntax.(
+      let%map_open
+        projects_dir = flag "-projects-dir" (required string) ~doc:"directory containing all projects" and
+        output_dir = flag "-output-dir" (required string) ~doc:"directory where json results will be saved" and
+        k = flag "-k" (required int) ~doc:"k" and
+        w = flag "-w" (required int) ~doc:"w"
+      in
+      fun () ->
+          let valid_parent_directory = Sys.is_directory projects_dir in
           let valid_output_directory = Sys.is_directory output_dir in
           (if Stdlib.(<>) valid_parent_directory `Yes then failwith "not a valid directory.");
           (if Stdlib.(<>) valid_output_directory `Yes then failwith "not a valid directory.");
           Out_channel.write_all (Filename.concat output_dir "README.md") ~data: "This is a file created so we do not do a huge computation and find out you can't save in the output directory.";
-          let projects = build_projects projects_parent_dir in
+          let projects = build_projects projects_dir ~k:k ~w:w in
           print_endline "Projects have been generated and kgrams have been selected. Performing comparisons.";
           let project_compare_result_thunks = compare_all_projects projects in
           let top_file_compare_results = top_k_file_compare_results project_compare_result_thunks ~k:1000 in
@@ -41,7 +44,7 @@ let command =
           }) in
 
           Yojson.Safe.to_file (Filename.concat output_dir "summary.json") (list_of_file_compare_results_to_yojson top_k_lightweight);
-       )))
+       )
 
 let () =
   Command.run ~version:"1.0" command

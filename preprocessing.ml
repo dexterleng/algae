@@ -7,6 +7,7 @@ type kgram = {
   (* zero-indexed; line 1 is 0 *)
   starting_line: int;
   starting_index_in_line: int;
+  str: string;
   hash: int;
 } [@@deriving yojson]
 
@@ -54,10 +55,10 @@ let generate_n_gram_from_document doc n =
         match doc with
         | Char(_)::rest -> 
             (try
-                let kgram_chars = take_ignoring_newline doc n in
+                let str = take_ignoring_newline doc n in
                 let lines_occupied = (count_newline_in_window doc n) + 1 in
-                let hash = Hashtbl.hash kgram_chars in
-                let ngram = { length = n; lines_occupied; hash; starting_line = curr_line; starting_index_in_line = curr_index; } in
+                let hash = Hashtbl.hash str in
+                let ngram = { str; length = n; lines_occupied; hash; starting_line = curr_line; starting_index_in_line = curr_index; } in
                 ngram::(fn rest n curr_line (curr_index + 1))
             with | Failure _ -> [])
         | Newline::rest -> fn rest n (curr_line + 1) 0
