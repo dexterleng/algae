@@ -205,8 +205,8 @@ let top_k_file_compare_results project_compare_result_thunks ~k =
     );
     List.rev (List.sort (Pairing_heap.to_list heap) ~compare:cmp)
 
-let build_projects projects_parent_dir =
+let build_projects projects_parent_dir ~k ~w =
   let project_dirs = list_folders projects_parent_dir in
-  let projects = List.map ~f:(build_project ~k:10 ~w:10) project_dirs in
+  let projects = List.map ~f:(build_project ~k:k ~w:w) project_dirs in
   projects
 
