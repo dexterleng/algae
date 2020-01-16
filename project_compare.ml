@@ -139,7 +139,9 @@ let calculate_match_density kgrams_a_by_hash kgrams_b_by_hash =
       | [] ->
         let density_a = (float_of_int match_count_a) /. (float_of_int (calculate_number_of_kgrams kgrams_a_by_hash)) in
         let density_b = (float_of_int match_count_b) /. (float_of_int (calculate_number_of_kgrams kgrams_b_by_hash)) in
-        (density_a, density_b)
+        let density_a_no_nan = if Float.is_nan density_a then 0.0 else density_a in
+        let density_b_no_nan = if Float.is_nan density_b then 0.0 else density_b in
+        (density_a_no_nan, density_b_no_nan)
   in
   fn intersecting_hashes 0 0
 
