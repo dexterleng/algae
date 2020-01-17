@@ -15,4 +15,4 @@ RUN opam install core yojson ounit2 ppx_deriving_yojson
 COPY . .
 
 RUN opam install --deps-only .
-RUN sudo opam config exec dune build ./project_compare.exe
+RUN sudo opam config exec dune build ./start.exe
