@@ -16,3 +16,8 @@ COPY . .
 
 RUN opam install --deps-only .
 RUN sudo opam config exec dune build ./start.exe
+
+RUN sudo chmod -R +rwx ./
+RUN sudo chmod +x docker-scripts/evaluate.sh
+
+ENTRYPOINT ["./docker-scripts/evaluate.sh"]
