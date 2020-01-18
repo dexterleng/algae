@@ -18,8 +18,8 @@ let command =
       fun () ->
           let valid_parent_directory = Sys.is_directory projects_dir in
           let valid_output_directory = Sys.is_directory output_dir in
-          (if Stdlib.(<>) valid_parent_directory `Yes then failwith "not a valid directory.");
-          (if Stdlib.(<>) valid_output_directory `Yes then failwith "not a valid directory.");
+          (if Stdlib.(<>) valid_parent_directory `Yes then failwith "projects-dir is not a valid directory.");
+          (if Stdlib.(<>) valid_output_directory `Yes then failwith "output-dir not a valid directory.");
           Out_channel.write_all (Filename.concat output_dir "README.md") ~data: "This is a file created so we do not do a huge computation and find out you can't save in the output directory.";
           let projects = build_projects projects_dir ~k:k ~w:w in
           print_endline "Projects have been generated and kgrams have been selected. Performing comparisons.";
