@@ -21,16 +21,18 @@ let filename_extension name =
   let l = extension_len name in
   if l = 0 then "" else String.sub name ~pos:(String.length name - l) ~len:l    
 
-let rec list_files_recursively dir =
+let rec list_files_recursively dir ~blacklisted_directories =
   let is_hidden d = Stdlib.(=) d.[0] '.'
   in
   match Sys.is_directory dir with
     | `Yes ->
-      let children = Sys.readdir dir |> Array.to_list in
-      children
-        |> List.filter ~f:(negate is_hidden)
-        |> List.map ~f:(Filename.concat dir)
-        |> List.concat_map ~f:list_files_recursively
+      if (List.exists blacklisted_directories ~f:(fun b_dir -> String.(=) b_dir (Filename.basename dir))) then []
+      else
+          let children = Sys.readdir dir |> Array.to_list in
+          children
+            |> List.filter ~f:(negate is_hidden)
+            |> List.map ~f:(Filename.concat dir)
+            |> List.concat_map ~f:(list_files_recursively ~blacklisted_directories:blacklisted_directories)
     | `No -> [dir]
     | `Unknown -> [dir]
 
@@ -84,9 +86,9 @@ let build_kgram_by_hash_map kgrams =
     let map = Hashtbl.of_alist_multi (module Int) kgrams_paired_with_hash in
     map
 
-let build_project project_dir ~k ~w ~file_types =
+let build_project project_dir ~k ~w ~file_types ~blacklisted_directories =
   let project_name = Filename.basename project_dir in
-  let project_files = list_files_recursively project_dir
+  let project_files = list_files_recursively project_dir ~blacklisted_directories:blacklisted_directories
       (* file must be of a supported file type *) 
     |> List.filter ~f:(fun filename -> List.exists file_types ~f:(Filename.check_suffix filename))
     |> List.map ~f:(fun file_dir ->
@@ -228,8 +230,8 @@ let top_k_file_compare_results project_compare_result_thunks ~k =
     );
     List.rev (List.sort (Pairing_heap.to_list heap) ~compare:cmp)
 
-let build_projects projects_parent_dir ~k ~w ~file_types =
+let build_projects projects_parent_dir ~k ~w ~file_types ~blacklisted_directories =
   let project_dirs = list_folders projects_parent_dir in
-  let projects = List.map ~f:(build_project ~k:k ~w:w ~file_types:file_types) project_dirs in
+  let projects = List.map ~f:(build_project ~k:k ~w:w ~file_types:file_types ~blacklisted_directories:blacklisted_directories) project_dirs in
   projects
 

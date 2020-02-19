@@ -14,7 +14,8 @@ let command =
         output_dir = flag "-output-dir" (required string) ~doc:"directory where json results will be saved" and
         k = flag "-k" (required int) ~doc:"k" and
         w = flag "-w" (required int) ~doc:"w" and
-        file_types = flag "-file-type" (listed string) ~doc: "file types to be compared. (e.g. -file-types js -file-types ts -file-types jsx)."
+        file_types = flag "-file-type" (listed string) ~doc: "file types to be compared. (e.g. -file-type js -file-type ts -file-type jsx)." and
+        ignored_dirs = flag "-ignore-dir" (listed string) ~doc: "folder names to be ignored. (e.g. -ignore-dir node_modules)"
       in
       fun () ->
           let valid_parent_directory = Sys.is_directory projects_dir in
@@ -22,7 +23,7 @@ let command =
           (if Stdlib.(<>) valid_parent_directory `Yes then failwith "projects-dir is not a valid directory.");
           (if Stdlib.(<>) valid_output_directory `Yes then failwith "output-dir not a valid directory.");
           Out_channel.write_all (Filename.concat output_dir "README.md") ~data: "This is a file created so we do not do a huge computation and find out you can't save in the output directory.";
-          let projects = build_projects projects_dir ~k:k ~w:w ~file_types:file_types in
+          let projects = build_projects projects_dir ~k:k ~w:w ~file_types:file_types ~blacklisted_directories:ignored_dirs in
           print_endline "Projects have been generated and kgrams have been selected. Performing comparisons.";
           let project_compare_result_thunks = compare_all_projects projects in
           let top_file_compare_results = top_k_file_compare_results project_compare_result_thunks ~k:1000 in
