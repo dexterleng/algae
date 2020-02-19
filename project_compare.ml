@@ -3,6 +3,24 @@ open Core
 
 let negate f a = not (f a)
 
+let extension_len name =
+  let is_dir_sep s i = String.(=) (String.of_char s.[i]) Filename.dir_sep in 
+  let rec check i0 i =
+    if i < 0 || is_dir_sep name i then 0
+    else if Char.(=) name.[i] '.' then check i0 (i - 1)
+    else String.length name - i0
+  in
+  let rec search_dot i =
+    if i < 0 || is_dir_sep name i then 0
+    else if Char.(=) name.[i] '.' then check i (i - 1)
+    else search_dot (i - 1)
+  in
+  search_dot (String.length name - 1)
+
+let filename_extension name =
+  let l = extension_len name in
+  if l = 0 then "" else String.sub name ~pos:(String.length name - l) ~len:l    
+
 let rec list_files_recursively dir =
   let is_hidden d = Stdlib.(=) d.[0] '.'
   in
@@ -66,10 +84,11 @@ let build_kgram_by_hash_map kgrams =
     let map = Hashtbl.of_alist_multi (module Int) kgrams_paired_with_hash in
     map
 
-let build_project project_dir ~k ~w =
+let build_project project_dir ~k ~w ~file_types =
   let project_name = Filename.basename project_dir in
   let project_files = list_files_recursively project_dir
-    |> List.filter ~f:(fun filename -> Filename.check_suffix filename ".java")
+      (* file must be of a supported file type *) 
+    |> List.filter ~f:(fun filename -> List.exists file_types ~f:(Filename.check_suffix filename))
     |> List.map ~f:(fun file_dir ->
       let file_dir_from_project_root = Filename.concat project_name (String.chop_prefix_exn file_dir ~prefix:project_dir) in
       let lines = In_channel.read_lines file_dir in
@@ -170,7 +189,9 @@ let compare_files project_a_file project_b_file =
   { project_a_file; project_b_file; matching_kgrams; project_a_file_match_density; project_b_file_match_density; project_a_file_line_matches; project_b_file_line_matches; }
 
 let compare_two_projects project_a project_b =
-  let file_pairs = List.cartesian_product project_a.files project_b.files in
+  let file_pairs = List.cartesian_product project_a.files project_b.files
+    |> List.filter ~f:(fun (a, b) -> String.(=) (filename_extension a.file_dir) (filename_extension b.file_dir))
+  in
   let file_compare_results = List.map ~f:(fun (a, b) -> compare_files a b) file_pairs in
   { project_a; project_b; file_compare_results; }
 
@@ -207,8 +228,8 @@ let top_k_file_compare_results project_compare_result_thunks ~k =
     );
     List.rev (List.sort (Pairing_heap.to_list heap) ~compare:cmp)
 
-let build_projects projects_parent_dir ~k ~w =
+let build_projects projects_parent_dir ~k ~w ~file_types =
   let project_dirs = list_folders projects_parent_dir in
-  let projects = List.map ~f:(build_project ~k:k ~w:w) project_dirs in
+  let projects = List.map ~f:(build_project ~k:k ~w:w ~file_types:file_types) project_dirs in
   projects
 
