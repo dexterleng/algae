@@ -20,4 +20,6 @@ RUN sudo opam config exec dune build ./start.exe
 RUN sudo chmod -R +rwx ./
 RUN sudo chmod +x docker-scripts/evaluate.sh
 
+RUN sudo mkdir /usr/src/app/projects/
+
 ENTRYPOINT ["./docker-scripts/evaluate.sh"]
