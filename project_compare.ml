@@ -3,24 +3,6 @@ open Core
 
 let negate f a = not (f a)
 
-let extension_len name =
-  let is_dir_sep s i = String.(=) (String.of_char s.[i]) Filename.dir_sep in 
-  let rec check i0 i =
-    if i < 0 || is_dir_sep name i then 0
-    else if Char.(=) name.[i] '.' then check i0 (i - 1)
-    else String.length name - i0
-  in
-  let rec search_dot i =
-    if i < 0 || is_dir_sep name i then 0
-    else if Char.(=) name.[i] '.' then check i (i - 1)
-    else search_dot (i - 1)
-  in
-  search_dot (String.length name - 1)
-
-let filename_extension name =
-  let l = extension_len name in
-  if l = 0 then "" else String.sub name ~pos:(String.length name - l) ~len:l    
-
 let rec list_files_recursively dir ~blacklisted_directories =
   let is_hidden d = Stdlib.(=) d.[0] '.'
   in
@@ -192,7 +174,7 @@ let compare_files project_a_file project_b_file =
 
 let compare_two_projects project_a project_b =
   let file_pairs = List.cartesian_product project_a.files project_b.files
-    |> List.filter ~f:(fun (a, b) -> String.(=) (filename_extension a.file_dir) (filename_extension b.file_dir))
+    |> List.filter ~f:(fun (a, b) -> String.(=) (Stdlib.Filename.extension a.file_dir) (Stdlib.Filename.extension b.file_dir))
   in
   let file_compare_results = List.map ~f:(fun (a, b) -> compare_files a b) file_pairs in
   { project_a; project_b; file_compare_results; }
