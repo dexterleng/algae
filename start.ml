@@ -15,7 +15,8 @@ let command =
         k = flag "-k" (required int) ~doc:"k" and
         w = flag "-w" (required int) ~doc:"w" and
         file_types = flag "-file-type" (listed string) ~doc: "file types to be compared. (e.g. -file-type js -file-type ts -file-type jsx)." and
-        ignored_dirs = flag "-ignore-dir" (listed string) ~doc: "folder names to be ignored. (e.g. -ignore-dir node_modules)"
+        ignored_dirs = flag "-ignore-dir" (listed string) ~doc: "folder names to be ignored. (e.g. -ignore-dir node_modules)" and
+        m = flag "-m" (optional_with_default 10 int) ~doc: "maximum number of times a given passage may appear before it is ignored. default is 10"
       in
       fun () ->
           let valid_parent_directory = Sys.is_directory projects_dir in
@@ -33,10 +34,28 @@ let command =
             | None -> projects
             | Some(base_project_hashes) ->
               print_endline "Base project detected.";
-              List.iter (Set.to_list base_project_hashes) ~f:(fun h ->
-                print_endline (Int.to_string h);
-              );
               List.map projects ~f:(fun project -> filter_project_ngrams project base_project_hashes)
+          in
+
+          (* list of sets of hashes *)
+          let hashes_by_project = List.map projects ~f:(fun project ->
+              List.concat_map project.files ~f:(fun file -> Hashtbl.keys file.selected_kgrams_by_hash)
+                |> Set.of_list (module Int)
+          )
+          in
+          let hash_count = List.fold hashes_by_project ~init:(Map.empty (module Int)) ~f:(fun map hashes ->
+            Set.fold hashes ~init:map ~f:(fun map hash ->
+                let count = Map.find map hash in
+                match count with
+                  | None -> Map.set map ~key:hash ~data:1
+                  | Some(count) -> Map.set map ~key:hash ~data:(count + 1)
+            )
+          )
+          in
+          (* hashes that exceed the max occurrence specified by the -m flag *)
+          let freq_occuring_hashes = Set.of_map_keys (Map.filter hash_count ~f:(fun count -> count > m)) in
+          let projects =
+            List.map projects ~f:(fun project -> filter_project_ngrams project freq_occuring_hashes)
           in
 
           print_endline "Projects have been generated and kgrams have been selected. Performing comparisons.";
