@@ -68,7 +68,7 @@ let build_kgram_by_hash_map kgrams =
     let map = Hashtbl.of_alist_multi (module Int) kgrams_paired_with_hash in
     map
 
-let build_project project_dir ~k ~w ~file_types ~blacklisted_directories =
+let build_project project_dir ~k ~w ~file_types ~blacklisted_directories ~winnow =
   let project_name = Filename.basename project_dir in
   let project_files = list_files_recursively project_dir ~blacklisted_directories:blacklisted_directories
       (* file must be of a supported file type *) 
@@ -78,9 +78,12 @@ let build_project project_dir ~k ~w ~file_types ~blacklisted_directories =
       let lines = In_channel.read_lines file_dir in
       let doc = Preprocessing.convert_to_document lines in
       let kgrams = Preprocessing.generate_n_gram_from_document doc k in
-      let selected_kgrams = Winnowing.winnow kgrams ~w:w ~cmp:cmp_kgram in
-      let selected_kgrams_by_hash = build_kgram_by_hash_map selected_kgrams in
-      { file_dir = file_dir_from_project_root; selected_kgrams_by_hash; }
+      if not winnow then
+          { file_dir = file_dir_from_project_root; selected_kgrams_by_hash = build_kgram_by_hash_map kgrams; }
+      else
+        let selected_kgrams = Winnowing.winnow kgrams ~w:w ~cmp:cmp_kgram in
+        let selected_kgrams_by_hash = build_kgram_by_hash_map selected_kgrams in
+        { file_dir = file_dir_from_project_root; selected_kgrams_by_hash; }
     )
   in
   { project_name; project_dir; files = project_files; }
@@ -212,8 +215,32 @@ let top_k_file_compare_results project_compare_result_thunks ~k =
     );
     List.rev (List.sort (Pairing_heap.to_list heap) ~compare:cmp)
 
+let build_hash_set_of_project project = project.files
+    |> List.map ~f:(fun file -> file.selected_kgrams_by_hash)
+    |> List.concat_map ~f:(Hashtbl.keys)
+    |> Set.of_list (module Int)
+ 
+let filter_project_ngrams (project:project) hash_set =
+    let filter_file_hashes (file:project_file) hash_set =
+        let new_kgrams_by_hash = Hashtbl.filter_keys file.selected_kgrams_by_hash ~f:(fun hash -> not (Set.mem hash_set hash)) in
+        { file with selected_kgrams_by_hash = new_kgrams_by_hash; }
+    in
+    { project with
+      files = List.map project.files ~f:(fun file -> filter_file_hashes file hash_set)
+    }
+
 let build_projects projects_parent_dir ~k ~w ~file_types ~blacklisted_directories =
-  let project_dirs = list_folders projects_parent_dir in
-  let projects = List.map ~f:(build_project ~k:k ~w:w ~file_types:file_types ~blacklisted_directories:blacklisted_directories) project_dirs in
+  let project_dirs = list_folders projects_parent_dir
+    |> List.filter ~f:(fun dir -> String.(<>) (Filename.basename dir) "base") in
+  let projects = List.map ~f:(build_project ~k:k ~w:w ~file_types:file_types ~blacklisted_directories:blacklisted_directories ~winnow:true) project_dirs in
   projects
 
+let build_base_project projects_parent_dir ~k ~w ~file_types ~blacklisted_directories =
+  let base_project_dir = List.find
+    (list_folders projects_parent_dir)
+    ~f:(fun dir -> String.(=) (Filename.basename dir) "base")
+  in
+  match base_project_dir with
+    | None -> None
+    | Some(base_project_dir) ->
+      Some(build_project base_project_dir ~k:k ~w:w ~file_types:file_types ~blacklisted_directories:blacklisted_directories ~winnow:false)

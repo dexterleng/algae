@@ -5,6 +5,7 @@ open Preprocessing
 
 let kgram1 = {
     hash = 10;
+    str = "abc";
     length = 20;
     lines_occupied = 1;
     starting_line = 1;
@@ -13,6 +14,7 @@ let kgram1 = {
 
 let kgram2 = {
     hash = 999;
+    str = "123";
     length = 20;
     lines_occupied = 1;
     starting_line = 1;
@@ -21,6 +23,7 @@ let kgram2 = {
 
 let kgram3 = {
     hash = 123;
+    str = "qwe";
     length = 20;
     lines_occupied = 1;
     starting_line = 1;
