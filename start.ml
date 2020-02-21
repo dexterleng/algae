@@ -23,7 +23,22 @@ let command =
           (if Stdlib.(<>) valid_parent_directory `Yes then failwith "projects-dir is not a valid directory.");
           (if Stdlib.(<>) valid_output_directory `Yes then failwith "output-dir not a valid directory.");
           Out_channel.write_all (Filename.concat output_dir "README.md") ~data: "This is a file created so we do not do a huge computation and find out you can't save in the output directory.";
+          let base_project = build_base_project projects_dir ~k:k ~w:w ~file_types:file_types ~blacklisted_directories:ignored_dirs in
+          let base_project_hashes = match base_project with
+            | None -> None
+            | Some(base_project) -> Some(build_hash_set_of_project base_project)
+          in
           let projects = build_projects projects_dir ~k:k ~w:w ~file_types:file_types ~blacklisted_directories:ignored_dirs in
+          let projects = match base_project_hashes with
+            | None -> projects
+            | Some(base_project_hashes) ->
+              print_endline "Base project detected.";
+              List.iter (Set.to_list base_project_hashes) ~f:(fun h ->
+                print_endline (Int.to_string h);
+              );
+              List.map projects ~f:(fun project -> filter_project_ngrams project base_project_hashes)
+          in
+
           print_endline "Projects have been generated and kgrams have been selected. Performing comparisons.";
           let project_compare_result_thunks = compare_all_projects projects in
           let top_file_compare_results = top_k_file_compare_results project_compare_result_thunks ~k:1000 in
