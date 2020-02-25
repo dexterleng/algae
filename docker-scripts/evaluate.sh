@@ -8,4 +8,4 @@ fi
 sudo touch already_ran
 
 sudo mkdir ./compare_results/
-sudo ./_build/default/start.exe -k 100 -w 10 -output-dir ./compare_results/ -projects-dir ./projects/ -file-type js -ignore-dir node_modules
+sudo ./_build/default/start.exe -k $K -w $W -m $M -output-dir ./compare_results/ -projects-dir ./projects/ -file-type js -ignore-dir node_modules
